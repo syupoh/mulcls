@@ -22,3 +22,6 @@ MNIST_data/raw/train-images-idx3-ubyte
 MNIST_data/raw/train-labels-idx1-ubyte
 train.sh
 MulCls.code-workspace
+model
+mcd.py
+result
