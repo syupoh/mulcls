@@ -58,32 +58,23 @@ def main(opt):
             modelsplit[0] == 'stl10':
 
         for i in range(1, 5):
-            globals()['model{0}'.format(i)] = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
-        # model1 = conv9(p=opt.dropout_probability).cuda()
-        # model2 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
-        # model3 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
-        # model4 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
+            globals()['model{0}'.format(i)] = conv9(p=opt.dropout_probability).cuda() 
+        # model1 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
     else:
         for i in range(1, 5):
-            globals()['model{0}'.format(i)] = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
-        # model1 = conv3(p=opt.dropout_probability).cuda()
-        # model2 = conv3(p=opt.dropout_probability).cuda()
-        # model3 = conv3(p=opt.dropout_probability).cuda()
-        # model4 = conv3(p=opt.dropout_probability).cuda()
+            globals()['model{0}'.format(i)] = conv3(p=opt.dropout_probability).cuda() 
+        # model1 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
 
 
     dropout_mask1 = torch.randint(2, (1, 128, 1, 1), dtype=torch.float).cuda()
     # dropout_mask1 = torch.randint(2,(1,128,4,4), dtype=torch.float).cuda()
     ###########################
     for i in range(1, 5):
-            globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
-      
-    # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate) 
-    # optimizer2 = torch.optim.Adam(model2.parameters(), lr=opt.learning_rate) 
-    # optimizer3 = torch.optim.Adam(model3.parameters(), lr=opt.learning_rate) 
-    # optimizer4 = torch.optim.Adam(model4.parameters(), lr=opt.learning_rate) 
-    loss_function = torch.nn.CrossEntropyLoss().cuda()
-    loss_KLdiv = torch.nn.KLDivLoss(reduction='batchmean').cuda()
+            globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  
+    # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
+
+    loss_CE = torch.nn.CrossEntropyLoss().cuda()
+    loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
 
     prompt=''
     
@@ -117,22 +108,19 @@ def main(opt):
 
         print("model train..")
 
-        # for i in range(1, 5):
-        #     globals()['model{0}'.format(i)].train()
-        model1.train() # dropout use
-        model2.train() # dropout use
-        model3.train() # dropout use
-        model4.train() # dropout use
 
-        for epoch in range(opt.num_epochs): 
-            avg_loss = 0 
+        for epoch in range(opt.num_epochs):
+            for i in range(1, 5):
+                globals()['model{0}'.format(i)].train()
+            #model1.train() # dropout use
+
             for X, Y in train_loader: 
                 X = X.cuda() 
                 Y = Y.cuda() 
                 
                 # for i in range(1, 4):
                 #     globals()['prediction{0}'.format(i)] = globals()['model{0}'.format(i)](X)
-                #     globals()['loss{0}'.format(i)] = loss_function(globals()['prediction{0}'.format(i)], Y)
+                #     globals()['loss{0}'.format(i)] = loss_CE(globals()['prediction{0}'.format(i)], Y)
                 #     globals()['optimizer{0}'.format(i)].zero_grad()
                 #     globals()['loss{0}'.format(i)].backward()
                 #     globals()['optimizer{0}'.format(i)].step()
@@ -146,22 +134,8 @@ def main(opt):
                 #     globals()['trainaccuracy{0}'.format(i)] /= len(Y.cpu()) * 100
 
                 prediction1 = model1(X) 
-                loss1 = loss_function(prediction1, Y) 
-                optimizer1.zero_grad()
-                loss1.backward()  
-                optimizer1.step()
-
                 prediction2 = model2(X) 
-                loss2 = loss_function(prediction2, Y) 
-                optimizer2.zero_grad() 
-                loss2.backward() 
-                optimizer2.step()  
-                
                 prediction3 = model3(X) 
-                loss3 = loss_function(prediction3, Y) 
-                optimizer3.zero_grad() 
-                loss3.backward() 
-                optimizer3.step()  
 
                 predicted_classes1 = torch.argmax(prediction1, 1) 
                 correct_count1 = (predicted_classes1 == Y) # average of correct count 
@@ -179,10 +153,25 @@ def main(opt):
                 trainaccuracy3 = trainaccuracy3 / len(Y.cpu()) *100
 
                 #####                
-                lossdiv2 = loss_KLdiv(F.log_softmax(prediction1, dim=1), F.softmax(prediction2, dim=1))
-                lossdiv3 = loss_KLdiv(F.log_softmax(prediction2, dim=1), F.softmax(prediction1, dim=1))
+                lossdiv2 = loss_KLD(F.log_softmax(prediction1, dim=1), F.softmax(prediction2, dim=1))
+                lossdiv3 = loss_KLD(F.log_softmax(prediction2, dim=1), F.softmax(prediction1, dim=1))
 
-                # loss = loss1+lossdiv4
+                loss1 = loss_CE(prediction1, Y) 
+                # loss1 = loss1+lossdiv2
+                optimizer1.zero_grad()
+                loss1.backward()  
+                optimizer1.step()
+
+                loss2 = loss_CE(prediction2, Y) 
+                optimizer2.zero_grad() 
+                loss2.backward() 
+                optimizer2.step()  
+                
+                loss3 = loss_CE(prediction3, Y) 
+                optimizer3.zero_grad() 
+                loss3.backward() 
+                optimizer3.step()  
+
                 # optimizer1.zero_grad()
                 # loss.backward()
                 # optimizer1.step()
@@ -194,7 +183,7 @@ def main(opt):
                 # pdb.set_trace()
                 if epoch > 5:
                     prediction4 = model4(X[agreement])
-                    loss4 = loss_function(prediction4, Y[agreement]) 
+                    loss4 = loss_CE(prediction4, Y[agreement]) 
                     optimizer4.zero_grad() 
                     loss4.backward() 
                     optimizer4.step()  
@@ -226,15 +215,19 @@ def main(opt):
                     lossdiv = 0
                     lossdiv_ = 0
                     for i in range(itern):
-                        lossdiv += loss_KLdiv(F.log_softmax(Stensor, dim=1), F.softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1))
-                        lossdiv_ += loss_KLdiv(F.log_softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1), F.softmax(Stensor, dim=1))
-                    lossdiv += loss_KLdiv(F.log_softmax(Stensor[0:maxsize-itern*minsize], dim=1), F.softmax(Ltensor[itern*minsize-1:-1], dim=1))
-                    lossdiv_ += loss_KLdiv(F.log_softmax(Ltensor[itern*minsize-1:-1], dim=1), F.softmax(Stensor[0:maxsize-itern*minsize], dim=1))
+                        lossdiv += loss_KLD(F.log_softmax(Stensor, dim=1), F.softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1))
+                        lossdiv_ += loss_KLD(F.log_softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1), F.softmax(Stensor, dim=1))
+                    lossdiv += loss_KLD(F.log_softmax(Stensor[0:maxsize-itern*minsize], dim=1), F.softmax(Ltensor[itern*minsize-1:-1], dim=1))
+                    lossdiv_ += loss_KLD(F.log_softmax(Ltensor[itern*minsize-1:-1], dim=1), F.softmax(Stensor[0:maxsize-itern*minsize], dim=1))
                     
                     lossdiv /= (itern+1)
                     lossdiv_ /= (itern+1)
 
-                    # loss_KLdiv(predicted_disagreement, predicted_agreement)
+                    
+                    optimizer3.zero_grad() 
+                    lossdiv.backward() 
+                    optimizer3.step()  
+                    # loss_KLD(predicted_disagreement, predicted_agreement)
                     
                     
                     
@@ -253,6 +246,10 @@ def main(opt):
 
 
             if (epoch+1) % opt.valid_epoch == 0:
+                for i in range(1, 5):
+                    globals()['model{0}'.format(i)].eval()
+                #model1.eval() # dropout use
+
                 avgaccuracy1 = 0
                 avgaccuracy2 = 0
                 avgaccuracy3 = 0
@@ -357,10 +354,9 @@ def main(opt):
 
 
     with torch.no_grad(): 
-        model1.eval()  
-        model2.eval()  
-        model3.eval() 
-        model4.eval() 
+        for i in range(1, 5):
+            globals()['model{0}'.format(i)].eval()
+        #model1.eval() # dropout use
         n=0
         avgaccuracy1 = 0
         avgaccuracy2 = 0
