@@ -10,6 +10,7 @@ def add_args(parser):
     parser.add_argument('--pretrained', type=str, default='model/.pth')
     parser.add_argument('--dropout_probability', type=float, default=0.5)
     parser.add_argument('--learning_rate', type=float, default=0.1)
+    parser.add_argument('--loss4_KLD_dis_rate', type=float, default=0.1)
     parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
     return parser
 

@@ -12,7 +12,7 @@ import utils
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
-_PREFIX = 'div'
+_PREFIX = 'div3'
 
     ### For Tensorboard
         #   cur = time.time()
@@ -44,7 +44,7 @@ def main(opt):
     modelsplit = opt.model.split('_')
     train_loader, test_loader = utils.load_data(prefix=opt.prefix, opt=opt)
 
-    modelname = '{0}_{1}_{2:0.1f}'.format(opt.prefix, opt.model, opt.dropout_probability)
+    modelname = '{0}_{1}_{2}_{3}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
     
     resultname = './result/result_{0}_{1}.txt'.format(modelname, opt.num_epochs)
     
@@ -68,10 +68,8 @@ def main(opt):
     dropout_mask1 = torch.randint(2, (1, 128, 1, 1), dtype=torch.float).cuda()
     # dropout_mask1 = torch.randint(2,(1,128,4,4), dtype=torch.float).cuda()
     ###########################
-
     for i in range(1, 5):
-        globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)
-
+        globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  
     # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
 
     loss_CE = torch.nn.CrossEntropyLoss().cuda()
@@ -134,73 +132,39 @@ def main(opt):
                 #         = (globals()['correct_count{0}'.format(i)].float()).sum()
                 #     globals()['trainaccuracy{0}'.format(i)] /= len(Y.cpu()) * 100
 
-                prediction1 = model1(X) 
-                prediction2 = model2(X) 
-                prediction3 = model3(X) 
-
+                prediction1 = model1(X)
                 predicted_classes1 = torch.argmax(prediction1, 1) 
                 correct_count1 = (predicted_classes1 == Y) # average of correct count 
                 trainaccuracy1 = correct_count1.float().sum()
                 trainaccuracy1 = trainaccuracy1 / len(Y.cpu()) *100
-
-                predicted_classes2 = torch.argmax(prediction2, 1)
-                correct_count2 = (predicted_classes2 == Y) # average of correct count 
-                trainaccuracy2 = correct_count2.float().sum()
-                trainaccuracy2 = trainaccuracy2 / len(Y.cpu()) *100
-                
-                predicted_classes3 = torch.argmax(prediction3, 1)
-                correct_count3 = (predicted_classes3 == Y) # average of correct count 
-                trainaccuracy3 = correct_count3.float().sum()
-                trainaccuracy3 = trainaccuracy3 / len(Y.cpu()) *100
-
-                #####                
-                loss12_KLD = loss_KLD(F.log_softmax(prediction1, dim=1), F.softmax(prediction2, dim=1))
-                loss21_KLD = loss_KLD(F.log_softmax(prediction2, dim=1), F.softmax(prediction1, dim=1))
-
                 loss1_CE = loss_CE(prediction1, Y) 
-                loss1_full = loss1_CE
-                # loss1 = loss1+loss12_KLD
+                loss1_full = loss1_CE 
                 optimizer1.zero_grad()
                 loss1_full.backward()  
                 optimizer1.step()
 
+                prediction2 = model2(X) 
+                predicted_classes2 = torch.argmax(prediction2, 1)
+                correct_count2 = (predicted_classes2 == Y) # average of correct count 
+                trainaccuracy2 = correct_count2.float().sum()
+                trainaccuracy2 = trainaccuracy2 / len(Y.cpu()) *100
                 loss2_CE = loss_CE(prediction2, Y) 
-                loss2_full = loss2_CE
+                loss2_full = loss2_CE 
                 optimizer2.zero_grad() 
                 loss2_full.backward() 
                 optimizer2.step()  
                 
-                loss3_full = loss_CE(prediction3, Y) 
-                optimizer3.zero_grad() 
-                loss3_full.backward() 
-                optimizer3.step()  
-
-                # optimizer1.zero_grad()
-                # loss.backward()
-                # optimizer1.step()
-
+                #####                
+                loss12_KLD = loss_KLD(F.log_softmax(prediction1, dim=1), F.softmax(prediction2, dim=1))
+                
                 agreement = (predicted_classes1 == predicted_classes2)
                 disagreement = (predicted_classes1 != predicted_classes2)
                 nagree = (agreement).int().sum()
                 
                 # pdb.set_trace()
                 if epoch > 5:
-                    prediction4 = model4(X[agreement])
-                    loss4_CE = loss_CE(prediction4, Y[agreement]) 
-
-                    predicted_classes4 = torch.argmax(prediction4, 1)
-                    correct_count4 = (predicted_classes4 == Y[agreement]) # average of correct count 
-                    trainaccuracy4 = correct_count4.float().sum()
-                    trainaccuracy4 = trainaccuracy4 / len(Y[agreement].cpu()) *100
-
-                    loss4_full = loss4_CE
-                    optimizer4.zero_grad() 
-                    loss4_full.backward() 
-                    optimizer4.step()  
-                    #################
-                    
-                    predicted_disagreement = model3(X[disagreement])
-                    predicted_agreement = model3(X[agreement])
+                    predicted_disagreement = model4(X[disagreement], mode=2)
+                    predicted_agreement = model4(X[agreement], mode=2)
                     # pdb.set_trace()
 
                     minsize = min(predicted_disagreement.shape[0], \
@@ -216,33 +180,55 @@ def main(opt):
                         Stensor = predicted_disagreement
  
                     itern = int(maxsize/minsize)
-                    loss3_KLD_dis1 = 0
-                    loss3_KLD_dis2 = 0
+                    # lossdiv = 0
+                    loss4_KLD_dis = 0
                     for i in range(itern):
-                        loss3_KLD_dis1 += loss_KLD(F.log_softmax(Stensor, dim=1), F.softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1))
-                        loss3_KLD_dis2 += loss_KLD(F.log_softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1), F.softmax(Stensor, dim=1))
-                    loss3_KLD_dis1 += loss_KLD(F.log_softmax(Stensor[0:maxsize-itern*minsize], dim=1), F.softmax(Ltensor[itern*minsize-1:-1], dim=1))
-                    loss3_KLD_dis2 += loss_KLD(F.log_softmax(Ltensor[itern*minsize-1:-1], dim=1), F.softmax(Stensor[0:maxsize-itern*minsize], dim=1))
+                        loss4_KLD_dis += loss_KLD(F.log_softmax(Ltensor[i*minsize:(i+1)*minsize], dim=1), F.softmax(Stensor, dim=1))
+                    loss4_KLD_dis += loss_KLD(F.log_softmax(Ltensor[itern*minsize-1:-1], dim=1), F.softmax(Stensor[0:maxsize-itern*minsize], dim=1))
                     
-                    loss3_KLD_dis1 /= (itern+1)
-                    loss3_KLD_dis2 /= (itern+1)
-                    
-                    # loss3 = loss3_KLD_dis1
+                    loss4_KLD_dis /= (itern+1)
+
+
+                    prediction4 = model4(X[agreement])
+                    loss4_CE = loss_CE(prediction4, Y[agreement]) 
+
+###################################
+                    # loss4_full = loss4_CE
                     # optimizer4.zero_grad() 
-                    # loss3.backward() 
+                    # loss4_full.backward() 
                     # optimizer4.step()  
-                    
-                    
+
+                    # loss4_full = loss4_KLD_dis
+                    # optimizer4.zero_grad() 
+                    # loss4_full.backward() 
+                    # optimizer4.step()  
+#####################################
+## 이 둘의 결과가 같을까?
+###################################
+                    loss4_full = loss4_CE + opt.loss4_KLD_dis_rate*loss4_KLD_dis
+                    optimizer4.zero_grad() 
+                    loss4_full.backward() 
+                    optimizer4.step()  
+#####################################
+
+
+                    predicted_classes4 = torch.argmax(prediction4, 1)
+                    correct_count4 = (predicted_classes4 == Y[agreement]) # average of correct count 
+                    trainaccuracy4 = correct_count4.float().sum()
+                    trainaccuracy4 = trainaccuracy4 / len(Y[agreement].cpu()) *100
+
+                    ###############
+
                     print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
-                        # + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
-                            + 'trainaccuracy3 : {0:0.2f}, trainaccuracy4 : {1:0.2f}, '.format(trainaccuracy3.item(), trainaccuracy4.item()) \
-                                + 'loss3_KLD_dis1 : {0:0.3f}, loss3_KLD_dis2 : {1:0.3f}, '.format(loss3_KLD_dis1.item(), loss3_KLD_dis2.item()) \
-                                    + 'loss12_KLD : {0:0.3f}, loss21_KLD : {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()), end='\r')                          
+                        + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
+                            + ' trainaccuracy4 : {0:0.2f}, '.format(trainaccuracy4.item()) \
+                                + 'loss4_KLD_dis : {0:0.4f}, '.format(loss4_KLD_dis.item()) \
+                                    + 'loss12_KLD : {0:0.4f}, loss4_CE : {1:0.3f} '.format(loss12_KLD.item(), loss4_CE.item()), end='\r')                          
                 else:
 
                     print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
                         + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
-                            + 'loss12_KLD : {0:0.3f}, loss21_KLD : {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()) , end='\r')
+                            + 'loss12_KLD : {0:0.4f}'.format(loss12_KLD.item()) , end='\r')
                             
             #######################################################
 
@@ -254,7 +240,6 @@ def main(opt):
 
                 avgaccuracy1 = 0
                 avgaccuracy2 = 0
-                avgaccuracy3 = 0
                 avgaccuracy4 = 0
                 n = 0
                 nagree = 0
@@ -276,11 +261,6 @@ def main(opt):
                     testaccuracy2 = correct_count2.float().sum()
                     avgaccuracy2 += testaccuracy2
                     
-                    prediction3 = model3(X_test) #
-                    predicted_classes3 = torch.argmax(prediction3, 1) 
-                    correct_count3 = (predicted_classes3 == Y_test) 
-                    testaccuracy3 = correct_count3.float().sum()
-                    avgaccuracy3 += testaccuracy3
                     
                     prediction4 = model4(X_test) #
                     predicted_classes4 = torch.argmax(prediction4, 1) 
@@ -294,7 +274,6 @@ def main(opt):
 
                 avgaccuracy1 = (avgaccuracy1/n) *100
                 avgaccuracy2 = (avgaccuracy2/n) *100
-                avgaccuracy3 = (avgaccuracy3/n) *100
                 avgaccuracy4 = (avgaccuracy4/n) *100
 
 
@@ -313,24 +292,24 @@ def main(opt):
                 f.write('\tagreement : {0}/{1}\n'.format(nagree, n))
                 f.write('\ttrainaccuracy1 : {0:0.2f}\n'.format(trainaccuracy1.item()))
                 f.write('\ttrainaccuracy2 : {0:0.2f}\n'.format(trainaccuracy2.item()))
-                f.write('\ttrainaccuracy3 : {0:0.2f}\n'.format(trainaccuracy3.item()))
+                # f.write('\ttrainaccuracy3 : {0:0.2f}\n'.format(trainaccuracy3.item()))
                 f.write('\ttrainaccuracy4 : {0:0.2f}\n'.format(trainaccuracy4.item()))
                 f.write('\ttestaccuracy1 : {0:0.2f}\n'.format(avgaccuracy1.item()))
                 f.write('\ttestaccuracy2 : {0:0.2f}\n'.format(avgaccuracy2.item()))
-                f.write('\ttestaccuracy3 : {0:0.2f}\n'.format(avgaccuracy3.item()))
+                # f.write('\ttestaccuracy3 : {0:0.2f}\n'.format(avgaccuracy3.item()))
                 f.write('\ttestaccuracy4 : {0:0.2f}\n'.format(avgaccuracy4.item()))
-                f.write('\tloss3_KLD_dis1 : {0:0.4f}\n'.format(loss3_KLD_dis1.item()))
-                f.write('\tloss3_KLD_dis2 : {0:0.4f}\n'.format(loss3_KLD_dis2.item()))
+                # f.write('\tloss_dis1 : {0:0.4f}\n'.format(lossdiv.item()))
+                f.write('\tloss4_KLD_dis : {0:0.4f}\n'.format(loss4_KLD_dis.item()))
                 f.write('\tloss12_KLD : {0:0.4f}\n'.format(loss12_KLD.item()))
-                f.write('\tloss21_KLD : {0:0.4f}\n'.format(loss21_KLD.item()))
-                f.write('\tloss4_CE : {0:0.4f}\n'.format(loss4_CE.item()))
+                # f.write('\tloss_KLD2 : {0:0.4f}\n'.format(lossdiv3.item()))
+                f.write('\tloss4_CE : {0:0.4f}\n'.format(loss4_CE.item()))                
                 f.close()
                 print('')
                 
                 modelsave = '{0}/{1}_{2}.pth'.format(modelpath, modelname, epoch)
                 print(' testaccuracy1 : {0:0.2f}, '.format(avgaccuracy1.item()) \
                     + 'testaccuracy2 : {0:0.2f}, '.format(avgaccuracy2.item()) \
-                        + 'testaccuracy3 : {0:0.2f}, '.format(avgaccuracy3.item()) \
+                        # + 'testaccuracy3 : {0:0.2f}, '.format(avgaccuracy3.item()) \
                             + 'testaccuracy4 : {0:0.2f}'.format(avgaccuracy4.item()))
                 print(' -> model save : ', modelsave)
 
@@ -340,22 +319,22 @@ def main(opt):
                     'optimizer1_state_dict': optimizer1.state_dict(),
                     'trainaccuracy1': trainaccuracy1.item(),
                     'testaccuracy1': avgaccuracy1.item(),
-                    'loss1_CE': loss1_CE.item(), #
+                    'loss1_CE': loss1_CE.item(),
                     'model2_state_dict': model2.state_dict(),
                     'optimizer2_state_dict': optimizer2.state_dict(),
                     'trainaccuracy2': trainaccuracy2.item(),
                     'testaccuracy2': avgaccuracy2.item(),
-                    'loss2_CE': loss2_CE.item(), #
-                    'model3_state_dict': model3.state_dict(),
-                    'optimizer3_state_dict': optimizer3.state_dict(),
-                    'trainaccuracy3': trainaccuracy3.item(),
-                    'testaccuracy3': avgaccuracy3.item(),
-                    'loss3_KLD_dis1': loss3_KLD_dis1.item(),
-                    'loss3_KLD_dis2': loss3_KLD_dis2.item(), #
+                    'loss2_CE': loss2_CE.item(),
+                    # 'model3_state_dict': model3.state_dict(),
+                    # 'optimizer3_state_dict': optimizer3.state_dict(),
+                    # 'trainaccuracy3': trainaccuracy3.item(),
+                    # 'testaccuracy3': avgaccuracy3.item(),
+                    # 'loss3': loss3.item(),
                     'model4_state_dict': model4.state_dict(),
                     'optimizer4_state_dict': optimizer4.state_dict(),
                     'trainaccuracy4': trainaccuracy4.item(),
                     'testaccuracy4': avgaccuracy4.item(),
+                    'loss4_KLD_dis': loss4_KLD_dis.item(),
                     'loss4_CE': loss4_CE.item(),
                     'dropout_mask1': dropout_mask1
                     }, modelsave)
@@ -369,7 +348,7 @@ def main(opt):
         n=0
         avgaccuracy1 = 0
         avgaccuracy2 = 0
-        avgaccuracy3 = 0 
+        # avgaccuracy3 = 0 
         avgaccuracy4 = 0 
         for X, Y in test_loader: 
             n += X.size()[0]
@@ -377,30 +356,32 @@ def main(opt):
             Y_test = Y.cuda() 
 
             prediction1 = model1(X_test) 
-            prediction2 = model2(X_test) 
-            prediction3 = model3(X_test) 
-            prediction4 = model4(X_test) 
-
             predicted_classes1 = torch.argmax(prediction1, 1) 
-            predicted_classes2 = torch.argmax(prediction2, 1) 
-            predicted_classes3 = torch.argmax(prediction3, 1) 
-            predicted_classes4 = torch.argmax(prediction4, 1) 
             correct_count1 = (predicted_classes1 == Y_test) #
-            correct_count2 = (predicted_classes2 == Y_test) #
-            correct_count3 = (predicted_classes3 == Y_test) #
-            correct_count4 = (predicted_classes4 == Y_test) #
             accuracy1 = correct_count1.float().sum()
+            avgaccuracy1 += accuracy1
+
+            prediction2 = model2(X_test) 
+            predicted_classes2 = torch.argmax(prediction2, 1) 
+            correct_count2 = (predicted_classes2 == Y_test) #
             accuracy2 = correct_count2.float().sum()
-            accuracy3 = correct_count3.float().sum()
+            avgaccuracy2 += accuracy2
+
+            # prediction3 = model3(X_test) 
+            # predicted_classes3 = torch.argmax(prediction3, 1) 
+            # correct_count3 = (predicted_classes3 == Y_test) #
+            # accuracy3 = correct_count3.float().sum()
+            # avgaccuracy3 += accuracy3
+
+            prediction4 = model4(X_test) #
+            predicted_classes4 = torch.argmax(prediction4, 1) 
+            correct_count4 = (predicted_classes4 == Y_test) #
             accuracy4 = correct_count4.float().sum()
 
-            avgaccuracy1 += accuracy1
-            avgaccuracy2 += accuracy2
-            avgaccuracy3 += accuracy3
-            avgaccuracy4 += accuracy4
+            
         avgaccuracy1 = (avgaccuracy1/n ) *100
         avgaccuracy2 = (avgaccuracy2/n ) *100
-        avgaccuracy3 = (avgaccuracy3/n ) *100
+        # avgaccuracy3 = (avgaccuracy3/n ) *100
         avgaccuracy4 = (avgaccuracy4/n ) *100
         
         print('')
@@ -409,7 +390,7 @@ def main(opt):
         prompt=prompt+('====================================\n')
         prompt=prompt+(' Final average1 : {0:0.2f}%\n'.format(avgaccuracy1))
         prompt=prompt+(' Final average2 : {0:0.2f}%\n'.format(avgaccuracy2))
-        prompt=prompt+(' Final average3 : {0:0.2f}%\n'.format(avgaccuracy3))
+        # prompt=prompt+(' Final average3 : {0:0.2f}%\n'.format(avgaccuracy3))
         prompt=prompt+(' Final average4 : {0:0.2f}%\n'.format(avgaccuracy4))
         prompt=prompt+('====================================\n')
 
