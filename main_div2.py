@@ -409,5 +409,4 @@ if __name__ == '__main__':
     
     opt.digitroot = _DIGIT_ROOT
     opt.prefix = _PREFIX
-    print(opt.prefix)
     main(opt)
