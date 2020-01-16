@@ -33,16 +33,19 @@ class conv9(nn.Module):
             torch.nn.BatchNorm1d(10)
         )
 
-    def forward(self, input_x, dropmask=None):
+    def forward(self, input_x, dropmask=None, mode=1):
         self.h1 = self.conv_set9(input_x)
         if dropmask is None:
             # Base dropout mask is 1 (Fully Connected)
             dropmask = torch.ones(self.h1.shape).cuda()
 
-        # print(dropmask.shape)
         self.h1_1 = dropmask*self.h1 # AdD dropout
-        self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0],-1)) # FC 128->10
-        
+        if mode==1:
+            # print(dropmask.shape)
+            self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0],-1)) # FC 128->10
+        elif mode==2:
+            self.h2 = self.h1_1
+
         return self.h2
 
 class conv3(nn.Module):
@@ -78,56 +81,26 @@ class conv3(nn.Module):
         )
         
 
-    def forward(self, input_x, dropmask=None):
-        self.h1 = self.conv_set3(input_x) # conv3
-        if dropmask is None:
-            # Base dropout mask is 1 (Fully Connected)
-            dropmask = torch.ones(self.h1.shape).cuda()
-        
-        # print(dropmask.shape)
-        self.h1_1 = dropmask*self.h1 # AdD dropout
-        
-        ## tesk maks
-        # print(torch.all(torch.eq(self.h1_1, self.h1)))
-        # pdb.set_trace()
-        self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0],-1)) # FC 128->10
-        
+    def forward(self, input_x, dropmask=None, mode=1):
+        if mode==3:
+            self.h2 = self.linear(self.input_x.view(self.input_x.shape[0],-1))
+        else:
+            self.h1 = self.conv_set3(input_x) # conv3
+            if dropmask is None:
+                # Base dropout mask is 1 (Fully Connected)
+                dropmask = torch.ones(self.h1.shape).cuda()
+            
+            # print(dropmask.shape)
+            self.h1_1 = dropmask*self.h1 # AdD dropout
+            
+            ## test mask
+            # print(torch.all(torch.eq(self.h1_1, self.h1)))
+            # pdb.set_trace()
+
+            if mode==1:
+                self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0],-1)) # FC 128->10
+            elif mode==2:
+                self.h2 = self.h1_1
+
         return self.h2
 
-
-class Conv_residual_conv(nn.Module):
-    def __init__(self,in_dim,out_dim,act_fn):
-        super(Conv_residual_conv,self).__init__()
-        self.in_dim = in_dim
-        self.out_dim = out_dim
-        act_fn = act_fn
-
-        # self.convList = [convblock() for i in range(4)]
-        self.conv_1 = conv_block(self.in_dim,self.out_dim,act_fn)
-        self.conv_2 = conv_block_3(self.out_dim,self.out_dim,act_fn)
-        self.conv_3 = conv_block(self.out_dim,self.out_dim,act_fn)
-
-    def forward(self,input):
-        conv_1 = self.conv_1(input)
-        conv_2 = self.conv_2(conv_1)
-        res = conv_1 + conv_2
-        conv_3 = self.conv_3(res)
-        return conv_3
-
-
-# def conv_block(in_dim,out_dim,act_fn):
-#     model = nn.Sequential(
-#         nn.Conv2d(in_dim,out_dim, kernel_size=3, stride=1, padding=1),
-#         nn.BatchNorm2d(out_dim),
-#         act_fn,
-#     )
-#     return model
-
-
-# def conv_block_3(in_dim,out_dim,act_fn):
-#     model = nn.Sequential(
-#         conv_block(in_dim,out_dim,act_fn),
-#         conv_block(out_dim,out_dim,act_fn),
-#         conv_block(out_dim,out_dim,act_fn)
-#     )
-#     return model

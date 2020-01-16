@@ -4,7 +4,7 @@ def add_args(parser):
     parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=4098)
     parser.add_argument('--valid_epoch', type=int, default=10)
-    parser.add_argument('--prefix', type=str, default='dual_')
+    parser.add_argument('--prefix', type=str, default='')
     parser.add_argument('--model', type=str, default='mnist_mnist')
     parser.add_argument('--num_epochs', type=int, default=60)
     parser.add_argument('--pretrained', type=str, default='model/.pth')
