@@ -99,7 +99,7 @@ def main(opt):
     # optimizer3 = torch.optim.Adam(model3.parameters(), lr=opt.learning_rate) 
     # optimizer4 = torch.optim.Adam(model4.parameters(), lr=opt.learning_rate) 
     loss_function = torch.nn.CrossEntropyLoss().cuda()
-    loss_KLdiv = torch.nn.KLDivLoss().cuda()
+    loss_KLdiv = torch.nn.KLDivLoss(reduction='batchmean').cuda()
     prompt=''
     
     opt = arg_parser.parse_args()
@@ -201,6 +201,19 @@ def main(opt):
 
                 ###################
                 if epoch > 5:
+                    prediction4 = model4(X[agreement])
+                    loss4 = loss_function(prediction4, Y[agreement]) 
+                    optimizer4.zero_grad() 
+                    loss4.backward() 
+                    optimizer4.step()  
+
+                    predicted_classes4 = torch.argmax(prediction4, 1)
+                    correct_count4 = (predicted_classes4 == Y[agreement]) # average of correct count 
+                    trainaccuracy4 = correct_count4.float().sum()
+                    trainaccuracy4 = trainaccuracy4 / len(Y[agreement].cpu()) *100
+
+                    ###############
+                    
                     predicted_disagreement = model3(X[disagreement])
                     predicted_agreement = model3(X[agreement])
                     # pdb.set_trace()
@@ -222,33 +235,24 @@ def main(opt):
                     lossdiv_ = 0
                     # pdb.set_trace()
                     for i in range(itern):
-                        lossdiv += loss_KLdiv(Stensor, Ltensor[i*minsize:(i+1)*minsize])
-                        lossdiv_ += loss_KLdiv(Ltensor[i*minsize:(i+1)*minsize], Stensor)
-                    lossdiv += loss_KLdiv(Stensor[0:maxsize-itern*minsize], Ltensor[itern*minsize-1:-1])
-                    lossdiv_ += loss_KLdiv(Ltensor[itern*minsize-1:-1], Stensor[0:maxsize-itern*minsize])
+                        lossdiv += loss_KLdiv(Stensor.log(), Ltensor[i*minsize:(i+1)*minsize])
+                        lossdiv_ += loss_KLdiv(Ltensor[i*minsize:(i+1)*minsize].log(), Stensor)
+                    lossdiv += loss_KLdiv(Stensor[0:maxsize-itern*minsize].log(), Ltensor[itern*minsize-1:-1])
+                    lossdiv_ += loss_KLdiv(Ltensor[itern*minsize-1:-1].log(), Stensor[0:maxsize-itern*minsize])
                     
                     lossdiv /= (itern+1)
                     lossdiv_ /= (itern+1)
-                    lossdiv2 = loss_KLdiv(prediction1, prediction2)
-                    lossdiv3 = loss_KLdiv(prediction2, prediction1)
+                    lossdiv2 = loss_KLdiv(prediction1.log(), prediction2)
+                    lossdiv3 = loss_KLdiv(prediction2.log(), prediction1)
 
                     # loss_KLdiv(predicted_disagreement, predicted_agreement)
                     
-                    prediction4 = model4(X[agreement])
-                    loss4 = loss_function(prediction4, Y[agreement]) 
-                    optimizer4.zero_grad() 
-                    loss4.backward() 
-                    optimizer4.step()  
                     
-                    predicted_classes4 = torch.argmax(prediction4, 1)
-                    correct_count4 = (predicted_classes4 == Y[agreement]) # average of correct count 
-                    trainaccuracy4 = correct_count4.float().sum()
-                    trainaccuracy4 = trainaccuracy4 / len(Y[agreement].cpu()) *100
                     
                     print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
                         # + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
                             + 'trainaccuracy3 : {0:0.2f}, trainaccuracy4 : {1:0.2f}, '.format(trainaccuracy3.item(), trainaccuracy4.item()) \
-                                + 'lossdiv_dis1 : {0:0.2f}, lossdiv_dis2 : {1:0.2f}'.format(lossdiv, lossdiv_) \
+                                + 'lossdiv_dis1 : {0:0.2f}, lossdiv_dis2 : {1:0.2f}, '.format(lossdiv, lossdiv_) \
                                     + 'lossdiv1 : {0:0.2f}, lossdiv2 : {1:0.2f} '.format(lossdiv2, lossdiv3), end='\r')                          
                 else:
 
@@ -334,8 +338,8 @@ def main(opt):
                 
                 modelsave = '{0}/{1}_{2}.pth'.format(modelpath, modelname, epoch)
                 print(' testaccuracy1 : {0:0.2f}, '.format(avgaccuracy1.item()) \
-                    + 'testaccuracy2 : {1:0.2f}, '.format(avgaccuracy2.item()) \
-                        + 'testaccuracy3 : {2:0.2f}'.format(avgaccuracy3.item()))
+                    + 'testaccuracy2 : {0:0.2f}, '.format(avgaccuracy2.item()) \
+                        + 'testaccuracy3 : {0:0.2f}'.format(avgaccuracy3.item()))
                 print(' -> model save : ', modelsave)
 
                 torch.save({
@@ -364,10 +368,12 @@ def main(opt):
         model1.eval()  
         model2.eval()  
         model3.eval() 
+        model4.eval() 
         n=0
         avgaccuracy1 = 0
         avgaccuracy2 = 0
         avgaccuracy3 = 0 
+        avgaccuracy4 = 0 
         for X, Y in test_loader: 
             n += X.size()[0]
             X_test = X.cuda() 
@@ -376,23 +382,29 @@ def main(opt):
             prediction1 = model1(X_test) 
             prediction2 = model2(X_test) 
             prediction3 = model3(X_test) 
+            prediction4 = model4(X_test) 
 
             predicted_classes1 = torch.argmax(prediction1, 1) 
             predicted_classes2 = torch.argmax(prediction2, 1) 
             predicted_classes3 = torch.argmax(prediction3, 1) 
+            predicted_classes4 = torch.argmax(prediction4, 1) 
             correct_count1 = (predicted_classes1 == Y_test) #
             correct_count2 = (predicted_classes2 == Y_test) #
             correct_count3 = (predicted_classes3 == Y_test) #
+            correct_count4 = (predicted_classes4 == Y_test) #
             accuracy1 = correct_count1.float().sum()
             accuracy2 = correct_count2.float().sum()
             accuracy3 = correct_count3.float().sum()
+            accuracy4 = correct_count4.float().sum()
 
             avgaccuracy1 += accuracy1
             avgaccuracy2 += accuracy2
             avgaccuracy3 += accuracy3
+            avgaccuracy4 += accuracy4
         avgaccuracy1 = (avgaccuracy1/n ) *100
         avgaccuracy2 = (avgaccuracy2/n ) *100
         avgaccuracy3 = (avgaccuracy3/n ) *100
+        avgaccuracy4 = (avgaccuracy4/n ) *100
         
         print('')
         
@@ -401,11 +413,10 @@ def main(opt):
         prompt=prompt+(' Final average1 : {0:0.2f}%\n'.format(avgaccuracy1))
         prompt=prompt+(' Final average2 : {0:0.2f}%\n'.format(avgaccuracy2))
         prompt=prompt+(' Final average3 : {0:0.2f}%\n'.format(avgaccuracy3))
+        prompt=prompt+(' Final average4 : {0:0.2f}%\n'.format(avgaccuracy4))
         prompt=prompt+('====================================\n')
 
-            
-
-        
+        print(prompt)        
         f = open(resultname,'a')
         f.write(prompt)
         f.close()
