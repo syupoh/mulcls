@@ -1,4 +1,4 @@
-name: sbada
+name: mulcls
 channels:
   - conda-forge/label/cf201901
   - anaconda
@@ -185,5 +185,5 @@ dependencies:
     - tables==3.5.2
     - tensorboardx==1.7
     - urllib3==1.25.7
-prefix: /data/syupoh/anaconda3/envs/sbada
+prefix: /data/syupoh/anaconda3/envs/mulcls
 
