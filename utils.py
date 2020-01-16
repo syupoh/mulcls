@@ -1,7 +1,7 @@
 from Networks import * 
 
 def add_args(parser):
-    parser.add_argument('--gpu', type=int, default=1)
+    parser.add_argument('--gpu', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=4098)
     parser.add_argument('--valid_epoch', type=int, default=10)
     parser.add_argument('--prefix', type=str, default='dual_')
@@ -28,7 +28,7 @@ def load_data(prefix, opt):
         transforms.ToTensor()
     ])
     modelsplit = modelname.split('_')
-    modelname = prefix + modelname
+    modelname = prefix + '_' + modelname
     if modelsplit[0]=='mnist' or modelsplit[1]=='mnist':
         if modelsplit[0]=='svhn' or modelsplit[1]=='svhn':
             tf_MNIST = tf_to32

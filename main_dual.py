@@ -12,7 +12,7 @@ import utils
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
-_PREFIX = 'dual_'
+_PREFIX = 'div_'
 
     ### For Tensorboard
         #   cur = time.time()
@@ -70,7 +70,6 @@ def main(opt):
     optimizer2 = torch.optim.Adam(model2.parameters(), lr=opt.learning_rate) 
     optimizer3 = torch.optim.Adam(model3.parameters(), lr=opt.learning_rate) 
     loss_function = torch.nn.CrossEntropyLoss().cuda()
-
     prompt=''
     
     opt = arg_parser.parse_args()
@@ -78,6 +77,7 @@ def main(opt):
     for arg in vars(opt):
         prompt='{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
     prompt=prompt+('====================================\n')
+    print(prompt)
         
 
     # prompt=prompt+('modelname : {0}\n'.format(opt.model))
@@ -86,17 +86,9 @@ def main(opt):
     # prompt=prompt+('learning_rate : {0}\n'.format(opt.learning_rate))
     # prompt=prompt+('gpu : {0}\n'.format(opt.gpu))
     # prompt=prompt+('batch_size : {0}\n'.format(opt.batch_size))
-    print(prompt)
 
     f = open(resultname,'w')
     f.write(prompt)
-    # f.write('modelname : {0}\n'.format(modelname))
-    # f.write('num_epochs : {0}\n'.format(num_epochs))
-    # f.write('dropout_probability : {0}\n'.format(opt.dropout_probability))
-    # f.write('learning_rate : {0}\n'.format(learning_rate))
-    # f.write('gpu : {0}\n'.format(opt.gpu))
-    # f.write('batch_size : {0}\n'.format(batch_size))
-    # f.write('====================================\n')
     f.close()
 
 
@@ -148,27 +140,32 @@ def main(opt):
                 trainaccuracy2 = correct_count2.float().sum()
                 trainaccuracy2 = trainaccuracy2 / len(Y.cpu()) *100
                 
-                agree = (predicted_classes1 == predicted_classes2).int().sum()
+                agreement = (predicted_classes1 == predicted_classes2)
+                # disagreement = (predicted_classes1 != predicted_classes2)
+                
+                nagree = (agreement).int().sum()
                 # pdb.set_trace()
                 if epoch > 5:
-                    
-                    prediction3 = model3(X[predicted_classes1 == predicted_classes2])
-                    loss3 = loss_function(prediction3, Y[predicted_classes1 == predicted_classes2]) 
+                    # div1 = loss_KLdiv(predicted_classes1, predicted_classes2)
+                    # div2 = loss_KLdiv(predicted_classes1, predicted_classes2)
+
+                    prediction3 = model3(X[agreement])
+                    loss3 = loss_function(prediction3, Y[agreement]) 
                     optimizer3.zero_grad() 
                     loss3.backward() 
                     optimizer3.step()  
 
                     
                     predicted_classes3 = torch.argmax(prediction3, 1)
-                    correct_count3 = (predicted_classes3 == Y[predicted_classes1 == predicted_classes2]) # average of correct count 
+                    correct_count3 = (predicted_classes3 == Y[agreement]) # average of correct count 
                     trainaccuracy3 = correct_count3.float().sum()
-                    trainaccuracy3 = trainaccuracy3 / len(Y[predicted_classes1 == predicted_classes2].cpu()) *100
+                    trainaccuracy3 = trainaccuracy3 / len(Y[agreement].cpu()) *100
                     
                     print('epoch : {0}, agreement : {1}/{2}, trainaccuracy1 : {3:0.2f}, trainaccuracy2 : {4:0.2f},  trainaccuracy3 : {5:0.2f}'.format(
-                        epoch,agree,len(Y.cpu()),trainaccuracy1.item(),trainaccuracy2.item(),trainaccuracy3.item()), end='\r') 
+                        epoch, nagree, len(Y.cpu()), trainaccuracy1.item(), trainaccuracy2.item(), trainaccuracy3.item()), end='\r') 
                         
                 print('epoch : {0}, agreement : {1}/{2}, trainaccuracy1 : {3:0.2f}, trainaccuracy2 : {4:0.2f}'.format(
-                    epoch,agree,len(Y.cpu()),trainaccuracy1.item(),trainaccuracy2.item()), end='\r')  
+                    epoch, nagree, len(Y.cpu()), trainaccuracy1.item(), trainaccuracy2.item()), end='\r')  
             #######################################################
 
 
@@ -176,15 +173,15 @@ def main(opt):
                 avgaccuracy1 = 0
                 avgaccuracy2 = 0
                 avgaccuracy3 = 0
-                n=0
-                agree = 0
+                n = 0
+                nagree = 0
                 for X, Y in test_loader: 
                     n += X.size()[0]
                     X_test = X.cuda() 
                     Y_test = Y.cuda() 
 
-                    prediction1 = model1(X_test) #
-                    prediction2 = model2(X_test) #
+                    prediction1 = model1(X_test) 
+                    prediction2 = model2(X_test) 
 
                     predicted_classes1 = torch.argmax(prediction1, 1) 
                     correct_count1 = (predicted_classes1 == Y_test) 
@@ -198,7 +195,8 @@ def main(opt):
 
                     avgaccuracy2 += testaccuracy2
                     
-                    agree = agree + (predicted_classes1 == predicted_classes2).int().sum()
+                    agreement = (predicted_classes1 == predicted_classes2)
+                    nagree = nagree + (agreement).int().sum()
                     if epoch > 5:
                         prediction3 = model3(X_test) #
                         predicted_classes3 = torch.argmax(prediction3, 1) 
@@ -215,7 +213,7 @@ def main(opt):
 
                 f = open(resultname,'a')
                 f.write('epoch : {0}\n'.format(epoch))
-                f.write('\tagreement : {0}/{1}\n'.format(agree,n))
+                f.write('\tagreement : {0}/{1}\n'.format(nagree,n))
                 f.write('\ttrainaccuracy1 : {0:0.2f}\n'.format(trainaccuracy1.item()))
                 f.write('\ttrainaccuracy2 : {0:0.2f}\n'.format(trainaccuracy2.item()))
                 
@@ -230,7 +228,7 @@ def main(opt):
                 f.close()
                 print('')
                 
-                modelsave = '{0}/{1}_{2}.pth'.format(modelpath,opt.model,epoch)
+                modelsave = '{0}/{1}_{2}.pth'.format(modelpath, opt.model, epoch)
                 print(' testaccuracy : {0:0.2f}'.format(avgaccuracy1.item()))
                 print(' -> model save : ', modelsave)
 
@@ -281,6 +279,7 @@ def main(opt):
         n=0
         avgaccuracy1 = 0
         avgaccuracy2 = 0
+        avgaccuracy3 = 0
         for X, Y in test_loader: 
             n += X.size()[0]
             X_test = X.cuda() 
