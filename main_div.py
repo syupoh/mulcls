@@ -27,6 +27,17 @@ _PREFIX = 'div'
     #             self.writer.add_scalar('MIoU', MIoU, self.current_epoch)
     #             self.writer.add_scalar('FWIoU', FWIoU, self.current_epoch)
     # writer.close()
+    
+def kl_div_with_logit(q_logit, p_logit):
+    q = F.softmax(q_logit, dim=1)
+    logq = F.log_softmax(q_logit, dim=1)
+    logp = F.log_softmax(p_logit, dim=1)
+
+    qlogq = ( q *logq).sum(dim=1).mean(dim=0)
+    qlogp = ( q *logp).sum(dim=1).mean(dim=0)
+
+    return qlogq - qlogp
+
 def main(opt):
 
     # opt.model = 'svhn_mnist'
@@ -100,6 +111,7 @@ def main(opt):
     # optimizer4 = torch.optim.Adam(model4.parameters(), lr=opt.learning_rate) 
     loss_function = torch.nn.CrossEntropyLoss().cuda()
     loss_KLdiv = torch.nn.KLDivLoss(reduction='batchmean').cuda()
+
     prompt=''
     
     opt = arg_parser.parse_args()
@@ -193,13 +205,23 @@ def main(opt):
                 trainaccuracy3 = correct_count3.float().sum()
                 trainaccuracy3 = trainaccuracy3 / len(Y.cpu()) *100
 
+                #####
+                lossdiv2 = kl_div_with_logit(prediction1, prediction2)
+                lossdiv3 = kl_div_with_logit(prediction2, prediction1)
+                
+                lossdiv4 = loss_KLdiv(F.log_softmax(prediction1), F.softmax(prediction2))
+                lossdiv5 = loss_KLdiv(F.log_softmax(prediction2), F.softmax(prediction1))
+
+                # loss = loss1+lossdiv4
+                # optimizer1.zero_grad()
+                # loss.backward()
+                # optimizer1.step()
+
                 agreement = (predicted_classes1 == predicted_classes2)
                 disagreement = (predicted_classes1 != predicted_classes2)
-                
                 nagree = (agreement).int().sum()
                 
-
-                ###################
+                # pdb.set_trace()
                 if epoch > 5:
                     prediction4 = model4(X[agreement])
                     loss4 = loss_function(prediction4, Y[agreement]) 
@@ -229,21 +251,25 @@ def main(opt):
                     else:
                         Ltensor = predicted_agreement
                         Stensor = predicted_disagreement
-
+ 
                     itern = int(maxsize/minsize)
                     lossdiv = 0
                     lossdiv_ = 0
                     # pdb.set_trace()
                     for i in range(itern):
-                        lossdiv += loss_KLdiv(Stensor.log(), Ltensor[i*minsize:(i+1)*minsize])
-                        lossdiv_ += loss_KLdiv(Ltensor[i*minsize:(i+1)*minsize].log(), Stensor)
-                    lossdiv += loss_KLdiv(Stensor[0:maxsize-itern*minsize].log(), Ltensor[itern*minsize-1:-1])
-                    lossdiv_ += loss_KLdiv(Ltensor[itern*minsize-1:-1].log(), Stensor[0:maxsize-itern*minsize])
+                        lossdiv += kl_div_with_logit(Stensor, Ltensor[i*minsize:(i+1)*minsize])
+                        lossdiv_ += kl_div_with_logit(Ltensor[i*minsize:(i+1)*minsize], Stensor)
+                    lossdiv += kl_div_with_logit(Stensor[0:maxsize-itern*minsize], Ltensor[itern*minsize-1:-1])
+                    lossdiv_ += kl_div_with_logit(Ltensor[itern*minsize-1:-1], Stensor[0:maxsize-itern*minsize])
+                   
+                    # for i in range(itern):
+                    #     lossdiv += loss_KLdiv(Stensor, Ltensor[i*minsize:(i+1)*minsize])
+                    #     lossdiv_ += loss_KLdiv(Ltensor[i*minsize:(i+1)*minsize], Stensor)
+                    # lossdiv += loss_KLdiv(Stensor[0:maxsize-itern*minsize], Ltensor[itern*minsize-1:-1])
+                    # lossdiv_ += loss_KLdiv(Ltensor[itern*minsize-1:-1], Stensor[0:maxsize-itern*minsize])
                     
                     lossdiv /= (itern+1)
                     lossdiv_ /= (itern+1)
-                    lossdiv2 = loss_KLdiv(prediction1.log(), prediction2)
-                    lossdiv3 = loss_KLdiv(prediction2.log(), prediction1)
 
                     # loss_KLdiv(predicted_disagreement, predicted_agreement)
                     
@@ -252,12 +278,15 @@ def main(opt):
                     print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
                         # + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
                             + 'trainaccuracy3 : {0:0.2f}, trainaccuracy4 : {1:0.2f}, '.format(trainaccuracy3.item(), trainaccuracy4.item()) \
-                                + 'lossdiv_dis1 : {0:0.2f}, lossdiv_dis2 : {1:0.2f}, '.format(lossdiv, lossdiv_) \
-                                    + 'lossdiv1 : {0:0.2f}, lossdiv2 : {1:0.2f} '.format(lossdiv2, lossdiv3), end='\r')                          
+                                + 'lossdiv_dis1 : {0:0.2f}, lossdiv_dis2 : {1:0.2f}, '.format(lossdiv.item(), lossdiv_.item()) \
+                                    + 'lossdiv1 : {0:0.2f}, lossdiv2 : {1:0.2f} '.format(lossdiv2.item(), lossdiv3.item()), end='\r')                          
                 else:
 
-                    print('epoch : {0}, agreement : {1}/{2}, trainaccuracy1 : {3:0.2f}, trainaccuracy2 : {4:0.2f}'.format(  
-                        epoch, nagree, len(Y.cpu()), trainaccuracy1.item(), trainaccuracy2.item()), end='\r')  
+                    print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
+                        + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
+                            + 'lossdiv1 : {0:0.2f}, lossdiv2 : {1:0.2f} '.format(lossdiv2.item(), lossdiv3.item())  \
+                                + 'lossdiv1_1 : {0:0.2f}, lossdiv2_1 : {1:0.2f} '.format(lossdiv4.item(), lossdiv5.item()) , end='\r') 
+                            
             #######################################################
 
 
@@ -339,7 +368,8 @@ def main(opt):
                 modelsave = '{0}/{1}_{2}.pth'.format(modelpath, modelname, epoch)
                 print(' testaccuracy1 : {0:0.2f}, '.format(avgaccuracy1.item()) \
                     + 'testaccuracy2 : {0:0.2f}, '.format(avgaccuracy2.item()) \
-                        + 'testaccuracy3 : {0:0.2f}'.format(avgaccuracy3.item()))
+                        + 'testaccuracy3 : {0:0.2f}, '.format(avgaccuracy3.item()) \
+                            + 'testaccuracy4 : {0:0.2f}'.format(avgaccuracy4.item()))
                 print(' -> model save : ', modelsave)
 
                 torch.save({
