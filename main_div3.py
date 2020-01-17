@@ -419,6 +419,7 @@ def main(opt):
             predicted_classes4 = torch.argmax(prediction4, 1) 
             correct_count4 = (predicted_classes4 == Y_test) #
             accuracy4 = correct_count4.float().sum()
+            avgaccuracy4 += accuracy4
 
             
         avgaccuracy1 = (avgaccuracy1/n ) *100
