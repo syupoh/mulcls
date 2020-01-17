@@ -1,0 +1,88 @@
+modelname : mnist_mnist
+num_epochs : 200
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 1
+batch_size : 8196
+====================================
+epoch : 0
+	loss : 1.5612
+	trainaccuracy : 51.17
+	testaccuracy : 52.68
+epoch : 10
+	loss : 0.7631
+	trainaccuracy : 75.59
+	testaccuracy : 75.50
+epoch : 20
+	loss : 0.7029
+	trainaccuracy : 77.35
+	testaccuracy : 77.99
+epoch : 30
+	loss : 0.6727
+	trainaccuracy : 78.45
+	testaccuracy : 79.29
+epoch : 40
+	loss : 0.6430
+	trainaccuracy : 79.21
+	testaccuracy : 80.01
+epoch : 50
+	loss : 0.6389
+	trainaccuracy : 79.64
+	testaccuracy : 80.51
+epoch : 60
+	loss : 0.6143
+	trainaccuracy : 80.06
+	testaccuracy : 80.42
+epoch : 70
+	loss : 0.6428
+	trainaccuracy : 79.49
+	testaccuracy : 80.12
+epoch : 80
+	loss : 0.6247
+	trainaccuracy : 80.39
+	testaccuracy : 80.27
+epoch : 90
+	loss : 0.6291
+	trainaccuracy : 79.66
+	testaccuracy : 80.51
+epoch : 100
+	loss : 0.6407
+	trainaccuracy : 79.17
+	testaccuracy : 80.76
+epoch : 110
+	loss : 0.6185
+	trainaccuracy : 80.09
+	testaccuracy : 81.34
+epoch : 120
+	loss : 0.6045
+	trainaccuracy : 80.78
+	testaccuracy : 80.61
+epoch : 130
+	loss : 0.6283
+	trainaccuracy : 79.54
+	testaccuracy : 80.82
+epoch : 140
+	loss : 0.6115
+	trainaccuracy : 80.36
+	testaccuracy : 81.26
+epoch : 150
+	loss : 0.5941
+	trainaccuracy : 81.42
+	testaccuracy : 81.55
+epoch : 160
+	loss : 0.5953
+	trainaccuracy : 80.58
+	testaccuracy : 81.39
+epoch : 170
+	loss : 0.5933
+	trainaccuracy : 80.47
+	testaccuracy : 81.44
+epoch : 180
+	loss : 0.5979
+	trainaccuracy : 80.77
+	testaccuracy : 80.88
+epoch : 190
+	loss : 0.5904
+	trainaccuracy : 81.33
+	testaccuracy : 81.70
+Final average : 67.25

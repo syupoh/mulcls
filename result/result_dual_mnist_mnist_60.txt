@@ -1,0 +1,53 @@
+modelname : dual_mnist_mnist
+num_epochs : 60
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 4098
+====================================
+epoch : 0
+	agree : 2916
+	trainaccuracy1 : 60.76
+	trainaccuracy2 : 55.81
+	testaccuracy1 : 62.85
+	testaccuracy2 : 58.72
+epoch : 10
+	agree : 3545
+	trainaccuracy1 : 76.72
+	trainaccuracy2 : 77.04
+	trainaccuracy3 : 78.59
+	testaccuracy1 : 76.42
+	testaccuracy2 : 77.92
+	testaccuracy3 : 73.72
+epoch : 20
+	agree : 3517
+	trainaccuracy1 : 78.75
+	trainaccuracy2 : 78.75
+	trainaccuracy3 : 82.71
+	testaccuracy1 : 79.16
+	testaccuracy2 : 79.87
+	testaccuracy3 : 78.23
+epoch : 30
+	agree : 3549
+	trainaccuracy1 : 78.23
+	trainaccuracy2 : 79.70
+	trainaccuracy3 : 82.92
+	testaccuracy1 : 79.51
+	testaccuracy2 : 80.11
+	testaccuracy3 : 78.72
+epoch : 40
+	agree : 3579
+	trainaccuracy1 : 79.89
+	trainaccuracy2 : 80.45
+	trainaccuracy3 : 83.77
+	testaccuracy1 : 79.87
+	testaccuracy2 : 80.23
+	testaccuracy3 : 79.58
+epoch : 50
+	agree : 3570
+	trainaccuracy1 : 78.21
+	trainaccuracy2 : 78.72
+	trainaccuracy3 : 82.89
+	testaccuracy1 : 80.32
+	testaccuracy2 : 80.14
+	testaccuracy3 : 79.50

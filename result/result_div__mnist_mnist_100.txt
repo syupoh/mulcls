@@ -1,0 +1,18 @@
+====================================
+gpu : 0
+batch_size : 2048
+valid_epoch : 10
+prefix : dual_
+model : mnist_mnist
+num_epochs : 100
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+digitroot : ~/dataset/digits/
+====================================
+epoch : 0
+	agreement : 6595/8192
+	trainaccuracy1 : 64.01
+	trainaccuracy2 : 65.53
+	testaccuracy1 : 66.91
+	testaccuracy2 : 67.96

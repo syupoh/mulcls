@@ -1,0 +1,93 @@
+====================================
+gpu : 0
+batch_size : 2048
+valid_epoch : 10
+prefix : dual_
+model : mnist_mnist
+num_epochs : 100
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+digitroot : ~/dataset/digits/
+====================================
+epoch : 0
+	agreement : 6704/8192
+	trainaccuracy1 : 68.36
+	trainaccuracy2 : 68.55
+	testaccuracy1 : 68.76
+	testaccuracy2 : 68.86
+epoch : 10
+	agreement : 7163/8192
+	trainaccuracy1 : 76.86
+	trainaccuracy2 : 77.49
+	trainaccuracy3 : 76.27
+	testaccuracy1 : 78.61
+	testaccuracy2 : 78.59
+	testaccuracy3 : 78.28
+epoch : 20
+	agreement : 7219/8192
+	trainaccuracy1 : 78.22
+	trainaccuracy2 : 77.44
+	trainaccuracy3 : 77.10
+	testaccuracy1 : 79.61
+	testaccuracy2 : 79.65
+	testaccuracy3 : 79.16
+epoch : 30
+	agreement : 7182/8192
+	trainaccuracy1 : 76.90
+	trainaccuracy2 : 77.64
+	trainaccuracy3 : 77.20
+	testaccuracy1 : 79.66
+	testaccuracy2 : 79.02
+	testaccuracy3 : 79.28
+epoch : 40
+	agreement : 7257/8192
+	trainaccuracy1 : 80.57
+	trainaccuracy2 : 80.08
+	trainaccuracy3 : 80.96
+	testaccuracy1 : 79.57
+	testaccuracy2 : 80.16
+	testaccuracy3 : 78.91
+epoch : 50
+	agreement : 7181/8192
+	trainaccuracy1 : 79.83
+	trainaccuracy2 : 80.37
+	trainaccuracy3 : 79.93
+	testaccuracy1 : 79.55
+	testaccuracy2 : 80.57
+	testaccuracy3 : 80.30
+epoch : 60
+	agreement : 7126/8192
+	trainaccuracy1 : 79.25
+	trainaccuracy2 : 80.81
+	trainaccuracy3 : 80.32
+	testaccuracy1 : 79.75
+	testaccuracy2 : 80.43
+	testaccuracy3 : 79.74
+epoch : 70
+	agreement : 7269/8192
+	trainaccuracy1 : 79.79
+	trainaccuracy2 : 79.98
+	trainaccuracy3 : 78.86
+	testaccuracy1 : 80.19
+	testaccuracy2 : 80.77
+	testaccuracy3 : 80.11
+epoch : 80
+	agreement : 7261/8192
+	trainaccuracy1 : 79.93
+	trainaccuracy2 : 78.66
+	trainaccuracy3 : 78.32
+	testaccuracy1 : 80.52
+	testaccuracy2 : 80.49
+	testaccuracy3 : 79.82
+epoch : 90
+	agreement : 7191/8192
+	trainaccuracy1 : 81.10
+	trainaccuracy2 : 79.44
+	trainaccuracy3 : 78.76
+	testaccuracy1 : 80.64
+	testaccuracy2 : 80.75
+	testaccuracy3 : 80.32
+Final average1 : 79.19
+Final average2 : 79.60
+Final average3 : 82.74

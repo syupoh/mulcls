@@ -1,0 +1,89 @@
+====================================
+modelname : dual_svhn_svhn
+num_epochs : 100
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 512
+====================================
+epoch : 0
+	agreement : 25316/25600
+	trainaccuracy1 : 18.16
+	trainaccuracy2 : 18.16
+	testaccuracy1 : 19.54
+	testaccuracy2 : 19.38
+epoch : 10
+	agreement : 23198/25600
+	trainaccuracy1 : 91.99
+	trainaccuracy2 : 92.58
+	trainaccuracy3 : 90.81
+	testaccuracy1 : 91.20
+	testaccuracy2 : 90.45
+	testaccuracy3 : 85.60
+epoch : 20
+	agreement : 23597/25600
+	trainaccuracy1 : 94.53
+	trainaccuracy2 : 93.16
+	trainaccuracy3 : 95.24
+	testaccuracy1 : 92.43
+	testaccuracy2 : 92.37
+	testaccuracy3 : 91.30
+epoch : 30
+	agreement : 23693/25600
+	trainaccuracy1 : 95.90
+	trainaccuracy2 : 95.70
+	trainaccuracy3 : 96.31
+	testaccuracy1 : 93.16
+	testaccuracy2 : 92.71
+	testaccuracy3 : 92.89
+epoch : 40
+	agreement : 23691/25600
+	trainaccuracy1 : 95.31
+	trainaccuracy2 : 95.51
+	trainaccuracy3 : 95.87
+	testaccuracy1 : 93.16
+	testaccuracy2 : 92.79
+	testaccuracy3 : 93.66
+epoch : 50
+	agreement : 23639/25600
+	trainaccuracy1 : 95.51
+	trainaccuracy2 : 96.09
+	trainaccuracy3 : 97.11
+	testaccuracy1 : 92.85
+	testaccuracy2 : 92.71
+	testaccuracy3 : 92.66
+epoch : 60
+	agreement : 23791/25600
+	trainaccuracy1 : 95.90
+	trainaccuracy2 : 96.29
+	trainaccuracy3 : 95.46
+	testaccuracy1 : 93.55
+	testaccuracy2 : 93.41
+	testaccuracy3 : 93.70
+epoch : 70
+	agreement : 23583/25600
+	trainaccuracy1 : 97.85
+	trainaccuracy2 : 96.29
+	trainaccuracy3 : 96.52
+	testaccuracy1 : 93.48
+	testaccuracy2 : 92.54
+	testaccuracy3 : 93.70
+epoch : 80
+	agreement : 23620/25600
+	trainaccuracy1 : 97.07
+	trainaccuracy2 : 97.85
+	trainaccuracy3 : 97.36
+	testaccuracy1 : 93.15
+	testaccuracy2 : 92.73
+	testaccuracy3 : 93.81
+epoch : 90
+	agreement : 23748/25600
+	trainaccuracy1 : 96.88
+	trainaccuracy2 : 97.85
+	trainaccuracy3 : 97.98
+	testaccuracy1 : 93.41
+	testaccuracy2 : 93.45
+	testaccuracy3 : 93.88
+Final average1 : 95.46
+Final average2 : 95.21
+Final average3 : 96.06

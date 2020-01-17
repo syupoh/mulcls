@@ -1,0 +1,88 @@
+modelname : svhn_svhn
+num_epochs : 200
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 2
+batch_size : 1024
+====================================
+epoch : 0
+	loss : 2.2316
+	trainaccuracy : 20.31
+	testaccuracy : 19.60
+epoch : 10
+	loss : 0.3605
+	trainaccuracy : 89.94
+	testaccuracy : 90.57
+epoch : 20
+	loss : 0.2139
+	trainaccuracy : 94.14
+	testaccuracy : 91.88
+epoch : 30
+	loss : 0.1803
+	trainaccuracy : 94.63
+	testaccuracy : 92.96
+epoch : 40
+	loss : 0.1889
+	trainaccuracy : 94.73
+	testaccuracy : 93.31
+epoch : 50
+	loss : 0.1170
+	trainaccuracy : 96.00
+	testaccuracy : 93.34
+epoch : 60
+	loss : 0.1206
+	trainaccuracy : 96.00
+	testaccuracy : 93.32
+epoch : 70
+	loss : 0.0911
+	trainaccuracy : 97.27
+	testaccuracy : 93.45
+epoch : 80
+	loss : 0.1050
+	trainaccuracy : 96.68
+	testaccuracy : 93.45
+epoch : 90
+	loss : 0.0728
+	trainaccuracy : 97.95
+	testaccuracy : 93.37
+epoch : 100
+	loss : 0.0735
+	trainaccuracy : 97.85
+	testaccuracy : 93.23
+epoch : 110
+	loss : 0.0756
+	trainaccuracy : 97.95
+	testaccuracy : 93.50
+epoch : 120
+	loss : 0.0553
+	trainaccuracy : 98.24
+	testaccuracy : 93.26
+epoch : 130
+	loss : 0.0657
+	trainaccuracy : 98.24
+	testaccuracy : 93.48
+epoch : 140
+	loss : 0.0357
+	trainaccuracy : 98.83
+	testaccuracy : 93.27
+epoch : 150
+	loss : 0.0322
+	trainaccuracy : 98.93
+	testaccuracy : 93.69
+epoch : 160
+	loss : 0.0636
+	trainaccuracy : 97.75
+	testaccuracy : 93.62
+epoch : 170
+	loss : 0.0379
+	trainaccuracy : 98.83
+	testaccuracy : 93.57
+epoch : 180
+	loss : 0.0400
+	trainaccuracy : 98.54
+	testaccuracy : 93.71
+epoch : 190
+	loss : 0.0275
+	trainaccuracy : 98.93
+	testaccuracy : 93.27
+Final average : 95.15

@@ -1,0 +1,169 @@
+====================================
+modelname : dual_usps_usps
+num_epochs : 200
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 512
+====================================
+epoch : 0
+	agreement : 690/1536
+	trainaccuracy1 : 44.73
+	trainaccuracy2 : 61.72
+	testaccuracy1 : 42.12
+	testaccuracy2 : 56.25
+epoch : 10
+	agreement : 1445/1536
+	trainaccuracy1 : 97.66
+	trainaccuracy2 : 96.48
+	trainaccuracy3 : 90.63
+	testaccuracy1 : 93.75
+	testaccuracy2 : 93.23
+	testaccuracy3 : 84.96
+epoch : 20
+	agreement : 1455/1536
+	trainaccuracy1 : 98.63
+	trainaccuracy2 : 98.44
+	trainaccuracy3 : 98.40
+	testaccuracy1 : 94.86
+	testaccuracy2 : 94.40
+	testaccuracy3 : 93.95
+epoch : 30
+	agreement : 1456/1536
+	trainaccuracy1 : 98.63
+	trainaccuracy2 : 98.44
+	trainaccuracy3 : 98.80
+	testaccuracy1 : 95.77
+	testaccuracy2 : 94.99
+	testaccuracy3 : 94.14
+epoch : 40
+	agreement : 1450/1536
+	trainaccuracy1 : 98.83
+	trainaccuracy2 : 98.44
+	trainaccuracy3 : 98.80
+	testaccuracy1 : 95.38
+	testaccuracy2 : 94.99
+	testaccuracy3 : 95.44
+epoch : 50
+	agreement : 1479/1536
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 99.61
+	testaccuracy1 : 96.22
+	testaccuracy2 : 95.90
+	testaccuracy3 : 96.03
+epoch : 60
+	agreement : 1480/1536
+	trainaccuracy1 : 99.80
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.41
+	testaccuracy1 : 96.03
+	testaccuracy2 : 96.61
+	testaccuracy3 : 96.74
+epoch : 70
+	agreement : 1486/1536
+	trainaccuracy1 : 99.80
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.61
+	testaccuracy1 : 96.55
+	testaccuracy2 : 96.22
+	testaccuracy3 : 96.09
+epoch : 80
+	agreement : 1482/1536
+	trainaccuracy1 : 99.02
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 96.29
+	testaccuracy2 : 96.16
+	testaccuracy3 : 96.55
+epoch : 90
+	agreement : 1479/1536
+	trainaccuracy1 : 99.61
+	trainaccuracy2 : 99.02
+	trainaccuracy3 : 99.21
+	testaccuracy1 : 96.61
+	testaccuracy2 : 96.03
+	testaccuracy3 : 96.22
+epoch : 100
+	agreement : 1484/1536
+	trainaccuracy1 : 99.41
+	trainaccuracy2 : 99.80
+	trainaccuracy3 : 99.61
+	testaccuracy1 : 95.57
+	testaccuracy2 : 96.55
+	testaccuracy3 : 95.57
+epoch : 110
+	agreement : 1487/1536
+	trainaccuracy1 : 99.61
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 96.16
+	testaccuracy2 : 96.09
+	testaccuracy3 : 96.22
+epoch : 120
+	agreement : 1481/1536
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.41
+	testaccuracy1 : 96.03
+	testaccuracy2 : 95.83
+	testaccuracy3 : 95.77
+epoch : 130
+	agreement : 1489/1536
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.80
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 96.29
+	testaccuracy2 : 95.70
+	testaccuracy3 : 96.03
+epoch : 140
+	agreement : 1487/1536
+	trainaccuracy1 : 99.41
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 96.22
+	testaccuracy2 : 96.81
+	testaccuracy3 : 96.35
+epoch : 150
+	agreement : 1469/1536
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 95.90
+	testaccuracy2 : 95.57
+	testaccuracy3 : 96.16
+epoch : 160
+	agreement : 1491/1536
+	trainaccuracy1 : 99.41
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.22
+	testaccuracy1 : 97.14
+	testaccuracy2 : 96.48
+	testaccuracy3 : 96.29
+epoch : 170
+	agreement : 1489/1536
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 100.00
+	testaccuracy1 : 96.48
+	testaccuracy2 : 96.68
+	testaccuracy3 : 97.01
+epoch : 180
+	agreement : 1481/1536
+	trainaccuracy1 : 99.41
+	trainaccuracy2 : 99.41
+	trainaccuracy3 : 99.61
+	testaccuracy1 : 96.55
+	testaccuracy2 : 95.90
+	testaccuracy3 : 97.07
+epoch : 190
+	agreement : 1488/1536
+	trainaccuracy1 : 99.80
+	trainaccuracy2 : 99.80
+	trainaccuracy3 : 99.80
+	testaccuracy1 : 95.90
+	testaccuracy2 : 96.22
+	testaccuracy3 : 96.68
+Final average1 : 97.20
+Final average2 : 96.81
+Final average3 : 103.49

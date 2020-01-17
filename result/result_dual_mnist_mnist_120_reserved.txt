@@ -1,0 +1,104 @@
+modelname : dual_mnist_mnist
+num_epochs : 120
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 4098
+====================================
+epoch : 0
+	agree : 3102
+	trainaccuracy1 : 56.12
+	trainaccuracy2 : 56.93
+	testaccuracy1 : 57.28
+	testaccuracy2 : 57.11
+epoch : 10
+	agree : 3563
+	trainaccuracy1 : 76.57
+	trainaccuracy2 : 77.53
+	trainaccuracy3 : 79.48
+	testaccuracy1 : 77.93
+	testaccuracy2 : 78.34
+	testaccuracy3 : 74.59
+epoch : 20
+	agree : 3578
+	trainaccuracy1 : 78.65
+	trainaccuracy2 : 78.50
+	trainaccuracy3 : 81.81
+	testaccuracy1 : 79.06
+	testaccuracy2 : 79.21
+	testaccuracy3 : 78.68
+epoch : 30
+	agree : 3561
+	trainaccuracy1 : 79.21
+	trainaccuracy2 : 78.89
+	trainaccuracy3 : 83.35
+	testaccuracy1 : 79.86
+	testaccuracy2 : 80.25
+	testaccuracy3 : 79.45
+epoch : 40
+	agree : 3607
+	trainaccuracy1 : 80.31
+	trainaccuracy2 : 79.67
+	trainaccuracy3 : 83.28
+	testaccuracy1 : 80.55
+	testaccuracy2 : 80.10
+	testaccuracy3 : 79.59
+epoch : 50
+	agree : 3595
+	trainaccuracy1 : 78.97
+	trainaccuracy2 : 79.21
+	trainaccuracy3 : 83.28
+	testaccuracy1 : 80.67
+	testaccuracy2 : 80.14
+	testaccuracy3 : 79.75
+epoch : 60
+	agree : 3626
+	trainaccuracy1 : 80.62
+	trainaccuracy2 : 80.23
+	trainaccuracy3 : 84.39
+	testaccuracy1 : 80.23
+	testaccuracy2 : 80.44
+	testaccuracy3 : 80.09
+epoch : 70
+	agree : 3593
+	trainaccuracy1 : 80.80
+	trainaccuracy2 : 80.31
+	trainaccuracy3 : 85.28
+	testaccuracy1 : 81.21
+	testaccuracy2 : 80.83
+	testaccuracy3 : 81.10
+epoch : 80
+	agree : 3581
+	trainaccuracy1 : 80.53
+	trainaccuracy2 : 80.58
+	trainaccuracy3 : 85.12
+	testaccuracy1 : 81.16
+	testaccuracy2 : 81.31
+	testaccuracy3 : 80.97
+epoch : 90
+	agree : 3584
+	trainaccuracy1 : 80.92
+	trainaccuracy2 : 80.82
+	trainaccuracy3 : 85.07
+	testaccuracy1 : 80.95
+	testaccuracy2 : 81.53
+	testaccuracy3 : 81.14
+epoch : 100
+	agree : 3557
+	trainaccuracy1 : 81.45
+	trainaccuracy2 : 80.50
+	trainaccuracy3 : 86.25
+	testaccuracy1 : 81.21
+	testaccuracy2 : 80.83
+	testaccuracy3 : 81.16
+epoch : 110
+	agree : 3606
+	trainaccuracy1 : 80.60
+	trainaccuracy2 : 80.16
+	trainaccuracy3 : 84.80
+	testaccuracy1 : 81.56
+	testaccuracy2 : 81.61
+	testaccuracy3 : 80.82
+Final average1 : 77.33
+Final average2 : 80.19
+Final average3 : 81.05

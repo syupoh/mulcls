@@ -441,6 +441,9 @@ def main(opt):
         f = open(resultname,'a')
         f.write(prompt)
         f.close()
+        
+        os.rename(resultname, resultname[:-4] + '_complete.txt')
+
     
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()

@@ -1,0 +1,72 @@
+====================================
+gpu : 0
+batch_size : 2048
+valid_epoch : 10
+prefix : div3
+model : mnist_mnist
+num_epochs : 200
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+digitroot : ~/dataset/digits/
+====================================
+epoch : 9
+	agreement : 6677/8192
+	trainaccuracy1 : 76.86
+	trainaccuracy2 : 76.90
+	trainaccuracy4 : 78.34
+	testaccuracy1 : 70.85
+	testaccuracy2 : 70.13
+	testaccuracy4 : 53.20
+	loss_dis2 : 0.0059
+	loss1 : 0.1666
+	loss2 : 0.1653
+	loss_CE4 : 0.7490
+epoch : 19
+	agreement : 5524/8192
+	trainaccuracy1 : 77.64
+	trainaccuracy2 : 77.64
+	trainaccuracy4 : 79.18
+	testaccuracy1 : 67.31
+	testaccuracy2 : 70.63
+	testaccuracy4 : 61.54
+	loss_dis2 : 0.0033
+	loss1 : 0.1650
+	loss2 : 0.1523
+	loss_CE4 : 0.7039
+epoch : 29
+	agreement : 5676/8192
+	trainaccuracy1 : 79.00
+	trainaccuracy2 : 77.25
+	trainaccuracy4 : 79.23
+	testaccuracy1 : 61.46
+	testaccuracy2 : 71.15
+	testaccuracy4 : 31.70
+	loss_dis2 : 0.0020
+	loss1 : 0.1701
+	loss2 : 0.1602
+	loss_CE4 : 0.6894
+epoch : 39
+	agreement : 6631/8192
+	trainaccuracy1 : 81.84
+	trainaccuracy2 : 80.27
+	trainaccuracy4 : 81.36
+	testaccuracy1 : 75.38
+	testaccuracy2 : 77.62
+	testaccuracy4 : 26.49
+	loss_dis2 : 0.0016
+	loss1 : 0.1590
+	loss2 : 0.1483
+	loss_CE4 : 0.5912
+epoch : 49
+	agreement : 6896/8192
+	trainaccuracy1 : 78.96
+	trainaccuracy2 : 78.42
+	trainaccuracy4 : 78.97
+	testaccuracy1 : 80.10
+	testaccuracy2 : 76.51
+	testaccuracy4 : 16.78
+	loss_dis2 : 0.0023
+	loss1 : 0.1635
+	loss2 : 0.1522
+	loss_CE4 : 0.6969

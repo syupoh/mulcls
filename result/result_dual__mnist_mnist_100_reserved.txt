@@ -1,0 +1,89 @@
+====================================
+modelname : mnist_mnist
+num_epochs : 100
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 2048
+====================================
+epoch : 0
+	agreement : 6688/8192
+	trainaccuracy1 : 62.55
+	trainaccuracy2 : 64.60
+	testaccuracy1 : 66.49
+	testaccuracy2 : 67.32
+epoch : 10
+	agreement : 6999/8192
+	trainaccuracy1 : 76.42
+	trainaccuracy2 : 76.90
+	trainaccuracy3 : 80.32
+	testaccuracy1 : 77.25
+	testaccuracy2 : 78.10
+	testaccuracy3 : 75.37
+epoch : 20
+	agreement : 7041/8192
+	trainaccuracy1 : 78.12
+	trainaccuracy2 : 78.56
+	trainaccuracy3 : 81.59
+	testaccuracy1 : 78.86
+	testaccuracy2 : 79.08
+	testaccuracy3 : 78.54
+epoch : 30
+	agreement : 7119/8192
+	trainaccuracy1 : 79.79
+	trainaccuracy2 : 80.22
+	trainaccuracy3 : 84.27
+	testaccuracy1 : 79.17
+	testaccuracy2 : 79.94
+	testaccuracy3 : 79.09
+epoch : 40
+	agreement : 7130/8192
+	trainaccuracy1 : 76.90
+	trainaccuracy2 : 78.12
+	trainaccuracy3 : 81.56
+	testaccuracy1 : 79.37
+	testaccuracy2 : 79.60
+	testaccuracy3 : 79.39
+epoch : 50
+	agreement : 7139/8192
+	trainaccuracy1 : 80.86
+	trainaccuracy2 : 79.79
+	trainaccuracy3 : 83.32
+	testaccuracy1 : 80.15
+	testaccuracy2 : 79.96
+	testaccuracy3 : 79.57
+epoch : 60
+	agreement : 7139/8192
+	trainaccuracy1 : 80.18
+	trainaccuracy2 : 79.93
+	trainaccuracy3 : 84.66
+	testaccuracy1 : 79.41
+	testaccuracy2 : 79.31
+	testaccuracy3 : 79.03
+epoch : 70
+	agreement : 7093/8192
+	trainaccuracy1 : 79.59
+	trainaccuracy2 : 80.62
+	trainaccuracy3 : 83.64
+	testaccuracy1 : 79.83
+	testaccuracy2 : 80.31
+	testaccuracy3 : 80.07
+epoch : 80
+	agreement : 7111/8192
+	trainaccuracy1 : 77.64
+	trainaccuracy2 : 79.10
+	trainaccuracy3 : 83.93
+	testaccuracy1 : 79.49
+	testaccuracy2 : 79.92
+	testaccuracy3 : 79.75
+epoch : 90
+	agreement : 7101/8192
+	trainaccuracy1 : 80.62
+	trainaccuracy2 : 80.18
+	trainaccuracy3 : 84.90
+	testaccuracy1 : 79.93
+	testaccuracy2 : 80.80
+	testaccuracy3 : 79.93
+Final average1 : 78.28
+Final average2 : 80.65
+Final average3 : 78.59

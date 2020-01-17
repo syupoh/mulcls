@@ -1,0 +1,32 @@
+modelname : svhn_svhn
+num_epochs : 60
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 2
+batch_size : 1024
+====================================
+epoch : 0
+	loss : 2.2377
+	trainaccuracy : 18.85
+	testaccuracy : 19.58
+epoch : 10
+	loss : 0.3535
+	trainaccuracy : 88.48
+	testaccuracy : 88.45
+epoch : 20
+	loss : 0.2654
+	trainaccuracy : 93.16
+	testaccuracy : 91.54
+epoch : 30
+	loss : 0.2039
+	trainaccuracy : 94.04
+	testaccuracy : 92.57
+epoch : 40
+	loss : 0.1639
+	trainaccuracy : 95.12
+	testaccuracy : 93.09
+epoch : 50
+	loss : 0.1346
+	trainaccuracy : 95.80
+	testaccuracy : 93.34
+Final average : 94.16

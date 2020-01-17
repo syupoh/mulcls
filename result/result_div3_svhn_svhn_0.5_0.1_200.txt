@@ -1,0 +1,13 @@
+====================================
+gpu : 1
+batch_size : 256
+valid_epoch : 10
+prefix : div3
+model : svhn_svhn
+num_epochs : 200
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+loss4_KLD_dis_rate : 0.1
+digitroot : ~/dataset/digits/
+====================================

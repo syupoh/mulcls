@@ -1,0 +1,32 @@
+modelname : mnist->mnist
+num_epochs : 60
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 3
+batch_size : 8196
+====================================
+epoch : 0
+	loss : 1.6458
+	trainaccuracy : 47.76
+	testaccuracy : 48.27
+epoch : 10
+	loss : 0.8092
+	trainaccuracy : 74.22
+	testaccuracy : 75.40
+epoch : 20
+	loss : 0.7115
+	trainaccuracy : 76.88
+	testaccuracy : 78.26
+epoch : 30
+	loss : 0.6731
+	trainaccuracy : 77.89
+	testaccuracy : 78.95
+epoch : 40
+	loss : 0.6553
+	trainaccuracy : 79.14
+	testaccuracy : 79.94
+epoch : 50
+	loss : 0.6429
+	trainaccuracy : 78.88
+	testaccuracy : 79.36
+Final average : 73.13

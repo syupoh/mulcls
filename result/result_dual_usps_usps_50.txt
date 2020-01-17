@@ -1,0 +1,49 @@
+====================================
+modelname : dual_usps_usps
+num_epochs : 50
+dropout_probability : 0.5
+learning_rate : 0.1
+gpu : 0
+batch_size : 512
+====================================
+epoch : 0
+	agreement : 661/1536
+	trainaccuracy1 : 55.08
+	trainaccuracy2 : 34.96
+	testaccuracy1 : 53.19
+	testaccuracy2 : 36.98
+epoch : 10
+	agreement : 1412/1536
+	trainaccuracy1 : 96.48
+	trainaccuracy2 : 97.46
+	trainaccuracy3 : 90.04
+	testaccuracy1 : 91.93
+	testaccuracy2 : 93.23
+	testaccuracy3 : 84.05
+epoch : 20
+	agreement : 1475/1536
+	trainaccuracy1 : 98.24
+	trainaccuracy2 : 98.44
+	trainaccuracy3 : 97.60
+	testaccuracy1 : 95.83
+	testaccuracy2 : 94.53
+	testaccuracy3 : 93.82
+epoch : 30
+	agreement : 1471/1536
+	trainaccuracy1 : 99.41
+	trainaccuracy2 : 99.02
+	trainaccuracy3 : 99.41
+	testaccuracy1 : 96.03
+	testaccuracy2 : 95.31
+	testaccuracy3 : 95.38
+epoch : 40
+	agreement : 1469/1536
+	trainaccuracy1 : 98.44
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 98.61
+	testaccuracy1 : 96.03
+	testaccuracy2 : 95.38
+	testaccuracy3 : 95.51
+Final average1 : 96.81
+Final average2 : 96.88
+Final average3 : 102.31
