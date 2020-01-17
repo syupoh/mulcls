@@ -233,16 +233,16 @@ def main(opt):
                     # optimizer4.step()  
                     
                     
-                    print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
-                        # + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
-                            + 'trainaccuracy3 : {0:0.2f}, trainaccuracy4 : {1:0.2f}, '.format(trainaccuracy3.item(), trainaccuracy4.item()) \
-                                + 'loss3_KLD_dis1 : {0:0.3f}, loss3_KLD_dis2 : {1:0.3f}, '.format(loss3_KLD_dis1.item(), loss3_KLD_dis2.item()) \
-                                    + 'loss12_KLD : {0:0.3f}, loss21_KLD : {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()), end='\r')                          
+                    print('epoch {0}, agreement {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
+                        # + 'trainacc1 {0:0.2f}, trainacc2 {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
+                            + 'trainacc3 {0:0.2f}, trainacc4 {1:0.2f}, '.format(trainaccuracy3.item(), trainaccuracy4.item()) \
+                                + 'loss3_KLD_dis1 {0:0.3f}, loss3_KLD_dis2 {1:0.3f}, '.format(loss3_KLD_dis1.item(), loss3_KLD_dis2.item()) \
+                                    + 'loss12_KLD {0:0.3f}, loss21_KLD {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()), end='\r')                          
                 else:
 
-                    print('epoch : {0}, agreement : {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
-                        + 'trainaccuracy1 : {0:0.2f}, trainaccuracy2 : {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
-                            + 'loss12_KLD : {0:0.3f}, loss21_KLD : {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()) , end='\r')
+                    print('epoch {0}, agreement {1}/{2}, '.format(epoch, nagree, len(Y.cpu())) \
+                        + 'trainaccuracy1 {0:0.2f}, trainaccuracy2 {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
+                            + 'loss12_KLD {0:0.3f}, loss21_KLD {1:0.3f} '.format(loss12_KLD.item(), loss21_KLD.item()) , end='\r')
                             
             #######################################################
 
@@ -328,10 +328,10 @@ def main(opt):
                 print('')
                 
                 modelsave = '{0}/{1}_{2}.pth'.format(modelpath, modelname, epoch)
-                print(' testaccuracy1 : {0:0.2f}, '.format(avgaccuracy1.item()) \
-                    + 'testaccuracy2 : {0:0.2f}, '.format(avgaccuracy2.item()) \
-                        + 'testaccuracy3 : {0:0.2f}, '.format(avgaccuracy3.item()) \
-                            + 'testaccuracy4 : {0:0.2f}'.format(avgaccuracy4.item()))
+                print(' testaccuracy1 {0:0.2f}, '.format(avgaccuracy1.item()) \
+                    + 'testaccuracy2 {0:0.2f}, '.format(avgaccuracy2.item()) \
+                        + 'testaccuracy3 {0:0.2f}, '.format(avgaccuracy3.item()) \
+                            + 'testaccuracy4 {0:0.2f}'.format(avgaccuracy4.item()))
                 print(' -> model save : ', modelsave)
 
                 torch.save({
