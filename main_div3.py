@@ -42,7 +42,12 @@ def main(opt):
     #########################
     #### DATASET 
     modelsplit = opt.model.split('_')
-    train_loader, test_loader = utils.load_data(prefix=opt.prefix, opt=opt)
+    trainset, trainset2, testset = utils.load_data(prefix=opt.prefix, opt=opt)
+
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
+    # train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
+
 
     modelname = '{0}_{1}_{2}_{3}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
     
@@ -75,13 +80,13 @@ def main(opt):
     loss_CE = torch.nn.CrossEntropyLoss().cuda()
     loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
 
-    prompt=''
+    prompt = ''
     
     opt = arg_parser.parse_args()
-    prompt=prompt+('====================================\n')
+    prompt = prompt+('====================================\n')
     for arg in vars(opt):
-        prompt='{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
-    prompt=prompt+('====================================\n')
+        prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+    prompt = prompt+('====================================\n')
     
     print(prompt, end='')
 
@@ -174,9 +179,9 @@ def main(opt):
                 nagree = (agreement).int().sum()
                 
                 # pdb.set_trace()
-                if epoch > 5:
+                if epoch > 5 and (agreement > 0 and disagreement > 0):
     #######################################
-                    predicted_disagreement = model3(X[disagreement])
+                    predicted_disagreement  = model3(X[disagreement])
                     predicted_agreement = model3(X[agreement])
                     # pdb.set_trace()
 
@@ -191,7 +196,7 @@ def main(opt):
                     else:
                         Ltensor = predicted_agreement
                         Stensor = predicted_disagreement
- 
+
                     itern = int(maxsize/minsize)
                     loss3_KLD_dis = 0
                     for i in range(itern):
@@ -217,7 +222,7 @@ def main(opt):
                     else:
                         Ltensor = predicted_agreement
                         Stensor = predicted_disagreement
- 
+
                     itern = int(maxsize/minsize)
                     loss4_KLD_dis = 0
                     for i in range(itern):

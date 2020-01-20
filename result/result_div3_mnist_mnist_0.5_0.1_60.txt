@@ -1,10 +1,10 @@
 ====================================
-gpu : 1
-batch_size : 256
+gpu : 0
+batch_size : 4
 valid_epoch : 10
-prefix : div3
-model : svhn_svhn
-num_epochs : 200
+prefix : 
+model : mnist_mnist
+num_epochs : 60
 pretrained : model/.pth
 dropout_probability : 0.5
 learning_rate : 0.1

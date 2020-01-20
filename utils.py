@@ -2,7 +2,7 @@ from Networks import *
 
 def add_args(parser):
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--batch_size', type=int, default=4098)
+    parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--valid_epoch', type=int, default=10)
     parser.add_argument('--prefix', type=str, default='')
     parser.add_argument('--model', type=str, default='mnist_mnist')
@@ -12,6 +12,7 @@ def add_args(parser):
     parser.add_argument('--learning_rate', type=float, default=0.1)
     parser.add_argument('--loss4_KLD_dis_rate', type=float, default=0.1)
     parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
+    parser.add_argument('--weight_decay', type=float, default=1e-5)
     return parser
 
 
@@ -53,6 +54,18 @@ def load_data(prefix, opt):
     # trainset.data.shape[-1] # width
 
     if modelsplit[1]=='mnist':
+        trainset2 = dset.MNIST(root=digitroot+'MNIST_data/', train=True, transform=tf_MNIST, download=True) 
+    elif modelsplit[1]=='usps':
+        trainset2 = dset.USPS(root=digitroot+'USPS_data/', train=True, transform=tf_to32, download=True) 
+    elif modelsplit[1]=='svhn':
+        trainset2 = dset.SVHN(root=digitroot+'svhn_data/', split='train', transform=tf_toTensor, download=True) 
+    elif modelsplit[1]=='cifar10':
+        trainset2 = dset.CIFAR10(root=digitroot+'cifar10_data/', train=True, transform=tf_to32, download=True)
+    elif modelsplit[1]=='stl10':
+        trainset2 = dset.STL10(root=digitroot+'STL10_data/', split='train', transform=tf_to32, download=True)
+
+
+    if modelsplit[1]=='mnist':
         testset = dset.MNIST(root=digitroot+'MNIST_data/', train=False, transform=tf_MNIST, download=True) 
     elif modelsplit[1]=='usps':
         testset = dset.USPS(root=digitroot+'USPS_data/', train=False, transform=tf_to32, download=True) 
@@ -66,7 +79,8 @@ def load_data(prefix, opt):
     # testset.data.shape[-2] # height
     # testset.data.shape[-1] # width
     
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True) # model
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=True, drop_last=True) # model
+    # train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, drop_last=True) # model
+    # train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=batch_size, shuffle=True, drop_last=True) # model
+    # test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=True, drop_last=True) # model
 
-    return train_loader, test_loader
+    return trainset, trainset2, testset

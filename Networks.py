@@ -40,10 +40,10 @@ class conv9(nn.Module):
             dropmask = torch.ones(self.h1.shape).cuda()
 
         self.h1_1 = dropmask*self.h1 # AdD dropout
-        if mode==1:
+        if mode == 1:
             # print(dropmask.shape)
             self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0],-1)) # FC 128->10
-        elif mode==2:
+        elif mode == 2:
             self.h2 = self.h1_1
 
         return self.h2
@@ -82,7 +82,7 @@ class conv3(nn.Module):
         
 
     def forward(self, input_x, dropmask=None, mode=1):
-        if mode==1:
+        if mode == 1:
             self.h1 = self.conv_set3(input_x) # conv3
             if dropmask is None:
                 # Base dropout mask is 1 (Fully Connected)
@@ -96,7 +96,8 @@ class conv3(nn.Module):
             # pdb.set_trace()
 
             self.h2 = self.linear(self.h1_1.view(self.h1_1.shape[0], -1)) # FC 128->10
-        elif mode==2:
+
+        elif mode == 2:
             self.h1 = self.conv_set3(input_x) # conv3
             if dropmask is None:
                 # Base dropout mask is 1 (Fully Connected)
@@ -105,7 +106,7 @@ class conv3(nn.Module):
             # print(dropmask.shape)
             self.h2 = dropmask*self.h1 # AdD dropout
 
-        elif mode==3:
+        elif mode == 3:
             self.h2 = self.linear(input_x.view(input_x.shape[0], -1))
 
         return self.h2
