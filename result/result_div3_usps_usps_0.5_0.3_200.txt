@@ -1,0 +1,27 @@
+====================================
+gpu : 1
+batch_size : 256
+valid_epoch : 10
+prefix : div3
+model : usps_usps
+num_epochs : 200
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+loss4_KLD_dis_rate : 0.3
+digitroot : ~/dataset/digits/
+====================================
+epoch : 9
+	agreement : 1693/1792
+	trainaccuracy1 : 95.31
+	trainaccuracy2 : 97.66
+	trainaccuracy3 : 95.70
+	trainaccuracy4 : 92.59
+	testaccuracy1 : 94.36
+	testaccuracy2 : 94.81
+	testaccuracy3 : 94.87
+	testaccuracy4 : 80.30
+	loss3_KLD_dis : 8.5092
+	loss4_KLD_dis : 0.0014
+	loss12_KLD : 0.1844
+	loss4_CE : 0.2604

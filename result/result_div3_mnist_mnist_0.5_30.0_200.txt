@@ -207,3 +207,92 @@ epoch : 139
 	loss4_KLD_dis : 0.0000
 	loss12_KLD : 0.1585
 	loss4_CE : 2.3008
+epoch : 149
+	agreement : 6905/8192
+	trainaccuracy1 : 81.20
+	trainaccuracy2 : 80.86
+	trainaccuracy3 : 81.05
+	trainaccuracy4 : 13.04
+	testaccuracy1 : 78.34
+	testaccuracy2 : 80.31
+	testaccuracy3 : 82.69
+	testaccuracy4 : 10.21
+	loss3_KLD_dis : 6.2674
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1324
+	loss4_CE : 2.3000
+epoch : 159
+	agreement : 7035/8192
+	trainaccuracy1 : 81.49
+	trainaccuracy2 : 80.37
+	trainaccuracy3 : 80.27
+	trainaccuracy4 : 13.64
+	testaccuracy1 : 78.27
+	testaccuracy2 : 80.90
+	testaccuracy3 : 82.23
+	testaccuracy4 : 10.22
+	loss3_KLD_dis : 6.0545
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1482
+	loss4_CE : 2.2975
+epoch : 169
+	agreement : 6309/8192
+	trainaccuracy1 : 80.76
+	trainaccuracy2 : 81.15
+	trainaccuracy3 : 80.37
+	trainaccuracy4 : 11.19
+	testaccuracy1 : 73.95
+	testaccuracy2 : 79.47
+	testaccuracy3 : 81.41
+	testaccuracy4 : 10.52
+	loss3_KLD_dis : 5.9937
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1551
+	loss4_CE : 2.3110
+epoch : 179
+	agreement : 6841/8192
+	trainaccuracy1 : 80.66
+	trainaccuracy2 : 80.71
+	trainaccuracy3 : 80.18
+	trainaccuracy4 : 12.92
+	testaccuracy1 : 77.97
+	testaccuracy2 : 81.04
+	testaccuracy3 : 82.46
+	testaccuracy4 : 11.15
+	loss3_KLD_dis : 6.1049
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1299
+	loss4_CE : 2.3015
+epoch : 189
+	agreement : 7172/8192
+	trainaccuracy1 : 79.54
+	trainaccuracy2 : 79.98
+	trainaccuracy3 : 80.08
+	trainaccuracy4 : 12.53
+	testaccuracy1 : 77.67
+	testaccuracy2 : 77.36
+	testaccuracy3 : 82.13
+	testaccuracy4 : 10.11
+	loss3_KLD_dis : 6.1501
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1445
+	loss4_CE : 2.3039
+epoch : 199
+	agreement : 6906/8192
+	trainaccuracy1 : 80.32
+	trainaccuracy2 : 80.37
+	trainaccuracy3 : 80.22
+	trainaccuracy4 : 11.04
+	testaccuracy1 : 77.40
+	testaccuracy2 : 78.44
+	testaccuracy3 : 82.59
+	testaccuracy4 : 8.87
+	loss3_KLD_dis : 6.3369
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1504
+	loss4_CE : 2.3084
+====================================
+ Final average1 : 77.72%
+ Final average2 : 78.63%
+ Final average4 : 9.19%
+====================================

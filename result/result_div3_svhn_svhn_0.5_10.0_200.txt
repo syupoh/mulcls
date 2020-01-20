@@ -1,0 +1,55 @@
+====================================
+gpu : 1
+batch_size : 256
+valid_epoch : 10
+prefix : div3
+model : svhn_svhn
+num_epochs : 200
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+loss4_KLD_dis_rate : 10.0
+digitroot : ~/dataset/digits/
+====================================
+epoch : 9
+	agreement : 24312/25856
+	trainaccuracy1 : 89.45
+	trainaccuracy2 : 87.11
+	trainaccuracy3 : 89.06
+	trainaccuracy4 : 17.75
+	testaccuracy1 : 92.97
+	testaccuracy2 : 92.09
+	testaccuracy3 : 92.96
+	testaccuracy4 : 6.11
+	loss3_KLD_dis : 7.4006
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1870
+	loss4_CE : 2.2430
+epoch : 19
+	agreement : 24282/25856
+	trainaccuracy1 : 94.92
+	trainaccuracy2 : 93.36
+	trainaccuracy3 : 94.92
+	trainaccuracy4 : 20.41
+	testaccuracy1 : 94.15
+	testaccuracy2 : 93.19
+	testaccuracy3 : 94.43
+	testaccuracy4 : 7.74
+	loss3_KLD_dis : 7.6191
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1032
+	loss4_CE : 2.2491
+epoch : 29
+	agreement : 24828/25856
+	trainaccuracy1 : 95.31
+	trainaccuracy2 : 96.48
+	trainaccuracy3 : 94.92
+	trainaccuracy4 : 22.22
+	testaccuracy1 : 95.05
+	testaccuracy2 : 95.13
+	testaccuracy3 : 95.24
+	testaccuracy4 : 7.76
+	loss3_KLD_dis : 8.5562
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.1066
+	loss4_CE : 2.2079
