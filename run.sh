@@ -16,23 +16,24 @@ fi
 
 if [ ${gpu} = 0 ]
 then
-    loss4rate_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.001 0.05 2 5 10 20 30" 
+    loss4rate_set="1e-4 5e-4 1e-5 5e-5 1e-6 5e-6" 
+    # loss4rate_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.001 0.05 2 5 10 20 30" 
     for loss4rate in ${loss4rate_set}
     do
-        printprom="python main_div3.py --gpu 0 --prefix div3 --model mnist_mnist --batch_size 2048 --num_epochs 200 --loss4_KLD_dis_rate ${loss4rate}"
+        printprom="python main_div3.py --gpu ${gpu} --prefix div3 --model mnist_mnist --batch_size 2048 --num_epochs 200 --loss4_KLD_dis_rate ${loss4rate}"
         echo ${printprom}
         ${printprom}
     done
 elif [ ${gpu} = 1 ]
 then
-    model_set="svhn_svhn usps_usps"
+    model_set="svhn_svhn"
     loss4rate_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.001 0.05 2 5 10 20 30" 
     dropout_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
     for model in ${model_set}
     do
         for loss4rate in ${loss4rate_set}
         do
-            printprom="python main_div3.py --gpu 1 --prefix div3 --model ${model} --batch_size 256 --num_epochs 200 --loss4_KLD_dis_rate ${loss4rate}"
+            printprom="python main_div3.py --gpu ${gpu} --prefix div3 --model ${model} --batch_size 256 --num_epochs 200 --loss4_KLD_dis_rate ${loss4rate}"
             echo ${printprom}
             ${printprom}
         done
@@ -40,12 +41,17 @@ then
     
 elif [ ${gpu} = 2 ]
 then
-    model_set="svhn_svhn usps_usps"
+    model_set="usps_usps"
+    loss4rate_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.001 0.05 2 5 10 20 30" 
+    dropout_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
     for model in ${model_set}
     do
-        printprom="python main_div3.py --gpu 2 --prefix div3 --model ${model} --batch_size 2048 --num_epochs 200 "
-        echo ${printprom}
-        ${printprom}
+        for loss4rate in ${loss4rate_set}
+        do
+            printprom="python main_div3.py --gpu ${gpu} --prefix div3 --model ${model} --batch_size 256 --num_epochs 200 --loss4_KLD_dis_rate ${loss4rate}"
+            echo ${printprom}
+            ${printprom}
+        done
     done
 fi
 

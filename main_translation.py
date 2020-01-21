@@ -20,7 +20,7 @@ from torchvision.utils import make_grid
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
-_PREFIX = 'div3'
+_PREFIX = 'translation'
 
     ### For Tensorboard
         #   cur = time.time()
@@ -37,6 +37,8 @@ _PREFIX = 'div3'
     # writer.close()
     
 def main(opt):
+    beta = 10.0
+    mu = 10.0
     gamma = 1.0
     alpha = 1.0
     torch.cuda.set_device(opt.gpu)
@@ -56,6 +58,14 @@ def main(opt):
     #### DATASET 
     #########################
 
+    # if norm==True:
+    #     X_min = -1
+    #     X_max = 1
+    # else:
+    #     X_min = src.train_X.min()
+    #     X_max = src.train_X.max()
+
+
     modelsplit = opt.model.split('_')
     trainset, trainset2, testset = utils.load_data(prefix=opt.prefix, opt=opt)
 
@@ -74,7 +84,7 @@ def main(opt):
     #########################
     #### Model 
     #########################
-    modelname = '{0}_{1}_{2:0.2f}_{3:0.2f}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
+    modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
     resultname = './result/result_{0}_{1}.txt'.format(modelname, opt.num_epochs)
 
     if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn' or \
@@ -148,7 +158,7 @@ def main(opt):
         globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  
     # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
     opt_gen = torch.optim.Adam(
-        chain(gen_st.parameters(), gen_ts.parameters()), **config2)  
+        chain(gen_st.parameters(), gen_ts.parameters(), model1.parameters(), model2.parameters()), **config2)  
     opt_dis = torch.optim.Adam(
         chain(dis_s.parameters(),dis_t.parameters()), **config2)  
 
@@ -218,16 +228,24 @@ def main(opt):
             fake_tgt_x = gen_st(src_x)
             fake_src_x = gen_ts(tgt_x)
             fake_back_src_x = gen_ts(fake_tgt_x)
+
 ##########################
             loss_gen1 = gamma * loss_LS(dis_s(fake_src_x), True)
             loss_gen2 = alpha * loss_LS(dis_t(fake_tgt_x), True)
+            loss_gen3 = beta * loss_CE(model2(fake_tgt_x), src_y)
+            loss_gen4 = mu * loss_CE(model1(src_x), src_y)
 #######################
-            loss_gen = gamma * loss_LS(dis_s(fake_src_x), True)
+
+            loss_gen = beta * loss_CE(model2(fake_tgt_x), src_y)
+            loss_gen += mu * loss_CE(model1(src_x), src_y)
+
+            loss_gen += gamma * loss_LS(dis_s(fake_src_x), True)
             loss_gen += alpha * loss_LS(dis_t(fake_tgt_x), True)
 
             loss_dis_s = gamma * loss_LS(
                 dis_s(fake_src_x_pool.query(fake_src_x)), False)
             loss_dis_s += gamma * loss_LS(dis_s(src_x), True)
+
             loss_dis_t = alpha * loss_LS(
                 dis_t(fake_tgt_x_pool.query(fake_tgt_x)), False)
             loss_dis_t += alpha * loss_LS(dis_t(tgt_x), True)
@@ -260,7 +278,15 @@ def main(opt):
             if niter % iter_per_epoch == 0:
                 epoch = niter // iter_per_epoch
 
-                if epoch % 10 == 0:
+                f = open(resultname, 'a')
+                f.write('epoch : {0}\n'.format(epoch))
+                f.write('\tloss_gen1 : {0:0.4f}\n'.format(loss_gen1.item()))
+                f.write('\tloss_gen2 : {0:0.4f}\n'.format(loss_gen2.item()))
+                f.write('\tloss_gen_CE_t : {0:0.4f}\n'.format(loss_gen3.item()))
+                f.write('\tloss_gen_CE_s : {0:0.4f}\n'.format(loss_gen4.item()))                
+                f.close()
+
+                if epoch % 1 == 0:
                     data = []
                     for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
                             fake_src_x]:
@@ -268,14 +294,14 @@ def main(opt):
                         if x.size(1) == 1:
                             x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
                         data.append(x)
-                    grid = make_grid(torch.cat(tuple(data), dim=0),
-                                    normalize=True, range=(-1, 1))
+                    grid = make_grid(torch.cat(tuple(data), dim=0))
                     writer.add_image('generated_{0}'.format(exp), grid, epoch)
             
 
             print('epoch {0} ({1}/{2}) '.format(epoch, niter % iter_per_epoch, iter_per_epoch) \
                 + 'dis_s {0:02.4f}, dis_t {1:02.4f}, '.format(loss_dis_s.item(), loss_dis_t.item()) \
-                    + 'loss_gen1 {0:02.4f}, loss_gen2 {1:02.4f}'.format(loss_gen1.item(), loss_gen2.item()), end='\r') 
+                    + 'loss_gen1 {0:02.4f}, loss_gen2 {1:02.4f} '.format(loss_gen1.item(), loss_gen2.item())
+                    + 'loss_gen_CE_t {0:02.4f}, loss_gen_CE_s {1:02.4f}'.format(loss_gen3.item(), loss_gen4.item()), end='\r') 
 
             if epoch >= opt.num_epochs:
                 break

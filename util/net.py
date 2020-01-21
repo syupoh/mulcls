@@ -80,7 +80,7 @@ class Generator(nn.Module):
         self.fc = nn.Linear(n_hidden, self.res * self.res)
         self.conv1 = nn.Conv2d(1 + n_c_in, n_ch, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(n_ch)
-
+        nn.conv2d
         for i in range(1, self.n_resblock + 1):
             setattr(self, 'block{:d}'.format(i), GenResBlock(n_ch))
         self.conv2 = nn.Conv2d(n_ch, n_c_out, 3, padding=1)

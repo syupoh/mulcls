@@ -4,7 +4,7 @@ import matplotlib as plt
 import pdb
 import os
 import argparse
-from tensorboardX import SummaryWriter
+# from tensorboardX import SummaryWriter
 import time
 
 from Networks import * 
@@ -171,18 +171,20 @@ def main(opt):
                 loss3_full.backward() 
                 optimizer3.step()  
                 
+                prediction4 = model4(X) 
                 #####                
                 loss12_KLD = loss_KLD(F.log_softmax(prediction1, dim=1), F.softmax(prediction2, dim=1))
                 
                 agreement = (predicted_classes1 == predicted_classes2)
                 disagreement = (predicted_classes1 != predicted_classes2)
                 nagree = (agreement).int().sum()
+                ndisagree = (disagreement).int().sum()
                 
                 # pdb.set_trace()
-                if epoch > 5 and (agreement > 0 and disagreement > 0):
+                if epoch > 5 and ((nagree > 0 and (ndisagree > 0))): 
     #######################################
-                    predicted_disagreement  = model3(X[disagreement])
-                    predicted_agreement = model3(X[agreement])
+                    predicted_disagreement = prediction3[disagreement]
+                    predicted_agreement = prediction3[agreement]
                     # pdb.set_trace()
 
                     minsize = min(predicted_disagreement.shape[0], \
@@ -204,8 +206,7 @@ def main(opt):
                     loss3_KLD_dis += loss_KLD(F.log_softmax(Ltensor[itern*minsize-1:-1], dim=1), F.softmax(Stensor[0:maxsize-itern*minsize], dim=1))
                     loss3_KLD_dis /= (itern+1)
 
-                    prediction3 = model3(X[agreement])
-                    loss3_CE = loss_CE(prediction3, Y[agreement]) 
+                    loss3_CE = loss_CE(prediction3[agreement], Y[agreement]) 
 #######################################
                     predicted_disagreement = model4(X[disagreement], mode=2)
                     predicted_agreement = model4(X[agreement], mode=2)
@@ -263,7 +264,7 @@ def main(opt):
                         + 'trainacc1 {0:0.2f}, trainacc2 {1:0.2f}, '.format(trainaccuracy1.item(), trainaccuracy2.item()) \
                             + 'trainacc4 {0:0.2f}, '.format(trainaccuracy4.item()) \
                                 + 'loss3_KLD_dis {0:0.4f}, '.format(loss3_KLD_dis.item()) \
-                                    + 'loss4_KLD_dis {0:0.4f}, '.format(loss4_KLD_dis.item()) \
+                                    + 'loss4_KLD_dis {0:0.4f}, loss3_CE {1:0.3f} '.format(loss4_KLD_dis.item(), loss3_CE.item()) \
                                         + 'loss12_KLD {0:0.4f}, loss4_CE {1:0.3f} '.format(loss12_KLD.item(), loss4_CE.item()), end='\r')                          
                 else:
 

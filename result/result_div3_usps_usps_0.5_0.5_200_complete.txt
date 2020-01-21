@@ -1,0 +1,299 @@
+====================================
+gpu : 2
+batch_size : 256
+valid_epoch : 10
+prefix : div3
+model : usps_usps
+num_epochs : 200
+pretrained : model/.pth
+dropout_probability : 0.5
+learning_rate : 0.1
+loss4_KLD_dis_rate : 0.5
+digitroot : ~/dataset/digits/
+weight_decay : 1e-05
+====================================
+epoch : 9
+	agreement : 1692/1792
+	trainaccuracy1 : 94.92
+	trainaccuracy2 : 96.09
+	trainaccuracy3 : 98.83
+	trainaccuracy4 : 94.21
+	testaccuracy1 : 93.02
+	testaccuracy2 : 95.54
+	testaccuracy3 : 94.31
+	testaccuracy4 : 90.29
+	loss3_KLD_dis : 8.7394
+	loss4_KLD_dis : 0.0208
+	loss12_KLD : 0.1909
+	loss4_CE : 0.2715
+epoch : 19
+	agreement : 1725/1792
+	trainaccuracy1 : 98.44
+	trainaccuracy2 : 98.83
+	trainaccuracy3 : 99.22
+	trainaccuracy4 : 97.19
+	testaccuracy1 : 95.81
+	testaccuracy2 : 95.54
+	testaccuracy3 : 91.91
+	testaccuracy4 : 95.93
+	loss3_KLD_dis : 10.3394
+	loss4_KLD_dis : 0.0002
+	loss12_KLD : 0.0934
+	loss4_CE : 0.1004
+epoch : 29
+	agreement : 1736/1792
+	trainaccuracy1 : 99.61
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 99.22
+	trainaccuracy4 : 98.81
+	testaccuracy1 : 96.04
+	testaccuracy2 : 96.71
+	testaccuracy3 : 96.21
+	testaccuracy4 : 95.42
+	loss3_KLD_dis : 11.5769
+	loss4_KLD_dis : 0.0001
+	loss12_KLD : 0.0772
+	loss4_CE : 0.0391
+epoch : 39
+	agreement : 1740/1792
+	trainaccuracy1 : 98.83
+	trainaccuracy2 : 97.27
+	trainaccuracy3 : 98.83
+	trainaccuracy4 : 98.79
+	testaccuracy1 : 96.43
+	testaccuracy2 : 96.65
+	testaccuracy3 : 96.93
+	testaccuracy4 : 96.65
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.1279
+	loss4_CE : 0.0524
+epoch : 49
+	agreement : 1716/1792
+	trainaccuracy1 : 98.05
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 99.22
+	trainaccuracy4 : 100.00
+	testaccuracy1 : 96.32
+	testaccuracy2 : 95.70
+	testaccuracy3 : 96.76
+	testaccuracy4 : 96.65
+	loss3_KLD_dis : 13.4736
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0961
+	loss4_CE : 0.0073
+epoch : 59
+	agreement : 1734/1792
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 99.60
+	testaccuracy1 : 97.43
+	testaccuracy2 : 96.26
+	testaccuracy3 : 97.27
+	testaccuracy4 : 96.60
+	loss3_KLD_dis : 13.3871
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0993
+	loss4_CE : 0.0053
+epoch : 69
+	agreement : 1741/1792
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 98.83
+	trainaccuracy3 : 99.22
+	trainaccuracy4 : 99.21
+	testaccuracy1 : 97.04
+	testaccuracy2 : 96.76
+	testaccuracy3 : 96.21
+	testaccuracy4 : 96.82
+	loss3_KLD_dis : 14.5250
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0628
+	loss4_CE : 0.0464
+epoch : 79
+	agreement : 1746/1792
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 98.83
+	trainaccuracy3 : 99.22
+	trainaccuracy4 : 98.81
+	testaccuracy1 : 96.65
+	testaccuracy2 : 96.76
+	testaccuracy3 : 96.43
+	testaccuracy4 : 96.88
+	loss3_KLD_dis : 14.5381
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0718
+	loss4_CE : 0.0429
+epoch : 89
+	agreement : 1751/1792
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 99.61
+	testaccuracy1 : 96.99
+	testaccuracy2 : 96.82
+	testaccuracy3 : 96.99
+	testaccuracy4 : 95.98
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0413
+	loss4_CE : 0.0102
+epoch : 99
+	agreement : 1746/1792
+	trainaccuracy1 : 99.22
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 99.60
+	testaccuracy1 : 96.82
+	testaccuracy2 : 96.93
+	testaccuracy3 : 97.15
+	testaccuracy4 : 96.82
+	loss3_KLD_dis : 16.2027
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0840
+	loss4_CE : 0.0167
+epoch : 109
+	agreement : 1746/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 100.00
+	testaccuracy1 : 96.99
+	testaccuracy2 : 96.76
+	testaccuracy3 : 96.99
+	testaccuracy4 : 96.99
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0569
+	loss4_CE : 0.0030
+epoch : 119
+	agreement : 1748/1792
+	trainaccuracy1 : 99.61
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 99.61
+	testaccuracy1 : 96.76
+	testaccuracy2 : 96.76
+	testaccuracy3 : 96.99
+	testaccuracy4 : 96.76
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0116
+	loss4_CE : 0.0179
+epoch : 129
+	agreement : 1748/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 99.61
+	testaccuracy1 : 96.99
+	testaccuracy2 : 96.88
+	testaccuracy3 : 97.10
+	testaccuracy4 : 97.27
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0264
+	loss4_CE : 0.0145
+epoch : 139
+	agreement : 1761/1792
+	trainaccuracy1 : 99.61
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 99.60
+	testaccuracy1 : 97.38
+	testaccuracy2 : 97.60
+	testaccuracy3 : 97.27
+	testaccuracy4 : 97.15
+	loss3_KLD_dis : 17.4903
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0431
+	loss4_CE : 0.0105
+epoch : 149
+	agreement : 1761/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 100.00
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 99.60
+	testaccuracy1 : 97.49
+	testaccuracy2 : 97.38
+	testaccuracy3 : 97.27
+	testaccuracy4 : 96.93
+	loss3_KLD_dis : 18.2648
+	loss4_KLD_dis : 0.0000
+	loss12_KLD : 0.0184
+	loss4_CE : 0.0140
+epoch : 159
+	agreement : 1754/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 99.61
+	testaccuracy1 : 97.15
+	testaccuracy2 : 97.27
+	testaccuracy3 : 97.27
+	testaccuracy4 : 97.04
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.1249
+	loss4_CE : 0.0058
+epoch : 169
+	agreement : 1747/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 99.61
+	trainaccuracy4 : 100.00
+	testaccuracy1 : 96.43
+	testaccuracy2 : 96.37
+	testaccuracy3 : 96.93
+	testaccuracy4 : 96.82
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0304
+	loss4_CE : 0.0009
+epoch : 179
+	agreement : 1750/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 100.00
+	testaccuracy1 : 96.54
+	testaccuracy2 : 96.99
+	testaccuracy3 : 96.32
+	testaccuracy4 : 96.15
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0434
+	loss4_CE : 0.0015
+epoch : 189
+	agreement : 1741/1792
+	trainaccuracy1 : 100.00
+	trainaccuracy2 : 99.22
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 99.61
+	testaccuracy1 : 97.10
+	testaccuracy2 : 96.82
+	testaccuracy3 : 97.21
+	testaccuracy4 : 96.76
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0865
+	loss4_CE : 0.0070
+epoch : 199
+	agreement : 1760/1792
+	trainaccuracy1 : 98.83
+	trainaccuracy2 : 99.61
+	trainaccuracy3 : 100.00
+	trainaccuracy4 : 100.00
+	testaccuracy1 : 97.43
+	testaccuracy2 : 97.49
+	testaccuracy3 : 97.32
+	testaccuracy4 : 96.76
+	loss3_KLD_dis : nan
+	loss4_KLD_dis : nan
+	loss12_KLD : 0.0257
+	loss4_CE : 0.0043
+====================================
+ Final average1 : 97.43%
+ Final average2 : 97.43%
+ Final average4 : 96.93%
+====================================
