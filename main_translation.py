@@ -5,7 +5,6 @@ import pdb
 import os
 import argparse
 from tensorboardX import SummaryWriter
-import time
 
 from Networks import * 
 
@@ -15,19 +14,20 @@ from util.loss import GANLoss
 from util.net import weights_init, Discriminator, Generator, LenetClassifier
 from util.sampler import InfiniteSampler
 import utils
+from datetime import datetime
 
 from torchvision.utils import make_grid
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
 _PREFIX = 'translation'
+_BETA = 10.0
+_MU = 10.0
+_GAMMA = 1.0
+_ALPHA = 1.0
 
     ### For Tensorboard
         #   cur = time.time()
-        #   run_dir = "runs/{0}".format(curtime[0:19])
-        
-        #   writer = SummaryWriter(run_dir)
-
         # writer.add_image('generated', sum_img.view(3, 256, 512), epoch)
         # writer.add_image('generated', sum_img.view(3, 256, 512), epoch)
     #             self.writer.add_scalar('PA', PA, self.current_epoch)
@@ -37,13 +37,20 @@ _PREFIX = 'translation'
     # writer.close()
     
 def main(opt):
-    beta = 10.0
-    mu = 10.0
-    gamma = 1.0
-    alpha = 1.0
+    opt.digitroot = _DIGIT_ROOT
+    opt.prefix = _PREFIX
+    opt.beta = _BETA
+    opt.mu = _MU
+    opt.gamma = _GAMMA
+    opt.alpha = _ALPHA
+
     torch.cuda.set_device(opt.gpu)
     device = torch.device('cuda:{0}'.format(opt.gpu))
-    exp = 'mulcls'
+    
+    now = datetime.now()
+    curtime = now.isoformat() 
+    run_dir = "runs/{0}_{1}".format(curtime[0:16], opt.prefix)
+
     # opt.model = 'svhn_mnist'
     # opt.model = 'mnist_usps'
     # opt.model = 'usps_mnist'
@@ -85,7 +92,7 @@ def main(opt):
     #### Model 
     #########################
     modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
-    resultname = './result/result_{0}_{1}.txt'.format(modelname, opt.num_epochs)
+    resultname = '{2}/result_{0}_{1}.txt'.format(modelname, opt.num_epochs, run_dir)
 
     if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn' or \
         modelsplit[0] == 'usps' or modelsplit[0] == 'cifar10' or \
@@ -172,14 +179,15 @@ def main(opt):
     #########################
 
     modelpath = 'model/'+modelname+'.pth'
-    prompt=''
-    
-    opt = arg_parser.parse_args()
-    prompt=prompt+('====================================\n')
+
+    writer = SummaryWriter(run_dir)
+
+    prompt = ''
+    prompt += ('====================================\n')
+    prompt += run_dir + '\n'
     for arg in vars(opt):
-        prompt='{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
-    prompt=prompt+('====================================\n')
-    
+        prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+    prompt += ('====================================\n')
     print(prompt, end='')
 
     f = open(resultname, 'w')
@@ -207,9 +215,6 @@ def main(opt):
 
         niter = 0
         epoch = 0
-        # writer = SummaryWriter(logdir='runs/mulcls', comment='_mulcls')
-        writer = SummaryWriter(comment='_mulcls')
-
 
         for i in range(1, 5):
             globals()['model{0}'.format(i)].train()
@@ -229,40 +234,22 @@ def main(opt):
             fake_src_x = gen_ts(tgt_x)
             fake_back_src_x = gen_ts(fake_tgt_x)
 
-##########################
-            loss_gen1 = gamma * loss_LS(dis_s(fake_src_x), True)
-            loss_gen2 = alpha * loss_LS(dis_t(fake_tgt_x), True)
-            loss_gen3 = beta * loss_CE(model2(fake_tgt_x), src_y)
-            loss_gen4 = mu * loss_CE(model1(src_x), src_y)
-#######################
+            loss_gen = opt.beta * loss_CE(model2(fake_tgt_x), src_y)
+            loss_gen += opt.mu * loss_CE(model1(src_x), src_y)
 
-            loss_gen = beta * loss_CE(model2(fake_tgt_x), src_y)
-            loss_gen += mu * loss_CE(model1(src_x), src_y)
+            loss_gen += opt.gamma * loss_LS(dis_s(fake_src_x), True)
+            loss_gen += opt.alpha * loss_LS(dis_t(fake_tgt_x), True)
 
-            loss_gen += gamma * loss_LS(dis_s(fake_src_x), True)
-            loss_gen += alpha * loss_LS(dis_t(fake_tgt_x), True)
-
-            loss_dis_s = gamma * loss_LS(
+            loss_dis_s = opt.gamma * loss_LS(
                 dis_s(fake_src_x_pool.query(fake_src_x)), False)
-            loss_dis_s += gamma * loss_LS(dis_s(src_x), True)
+            loss_dis_s += opt.gamma * loss_LS(dis_s(src_x), True)
 
-            loss_dis_t = alpha * loss_LS(
+            loss_dis_t = opt.alpha * loss_LS(
                 dis_t(fake_tgt_x_pool.query(fake_tgt_x)), False)
-            loss_dis_t += alpha * loss_LS(dis_t(tgt_x), True)
+            loss_dis_t += opt.alpha * loss_LS(dis_t(tgt_x), True)
 
             loss_dis = loss_dis_s + loss_dis_t
 
-            if niter == 1:
-                data = []
-                for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
-                            fake_src_x]:
-                    x = x.to(torch.device('cpu'))
-                    if x.size(1) == 1:
-                        x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
-                    data.append(x)
-                grid = make_grid(torch.cat(tuple(data), dim=0),
-                                    normalize=True, range=(-1, 1))
-                writer.add_image('generated_{0}'.format(exp), grid, epoch)
 
             for optim, loss in zip([opt_dis, opt_gen], [loss_dis, loss_gen]):
                 optim.zero_grad()
@@ -270,39 +257,71 @@ def main(opt):
                 optim.step()
 
             if niter % 100 == 0 and niter > 0:
+    ##########################
+                loss_dis_s1 = opt.gamma * loss_LS(
+                    dis_s(fake_src_x_pool.query(fake_src_x)), False)
+                loss_dis_s2 = opt.gamma * loss_LS(dis_s(src_x), True)
+                loss_dis_t1 = opt.alpha * loss_LS(
+                    dis_t(fake_tgt_x_pool.query(fake_tgt_x)), False)
+                loss_dis_t2 = opt.alpha * loss_LS(dis_t(tgt_x), True)
+
+                loss_gen_s = opt.gamma * loss_LS(dis_s(fake_src_x), True)
+                loss_gen_t = opt.alpha * loss_LS(dis_t(fake_tgt_x), True)
+                loss_gen_CE_t = opt.beta * loss_CE(model2(fake_tgt_x), src_y)
+                loss_gen_CE_s = opt.mu * loss_CE(model1(src_x), src_y)
+    ###########################
+
+                print('epoch {0} ({1}/{2}) '.format(epoch, (niter % iter_per_epoch), iter_per_epoch ) \
+                + 'dis_s1 {0:02.4f}, dis_s2 {1:02.4f}, '.format(loss_dis_s1.item(), loss_dis_s2.item()) \
+                    + 'dis_t1 {0:02.4f}, dis_t2 {1:02.4f}, '.format(loss_dis_t1.item(), loss_dis_t2.item()) \
+                        + 'loss_gen_s {0:02.4f}, loss_gen_t {1:02.4f} '.format(loss_gen_s.item(), loss_gen_t.item())
+                            + 'loss_gen_CE_t {0:02.4f}, loss_gen_CE_s {1:02.4f}'.format(loss_gen_CE_t.item(), loss_gen_CE_s.item()), end='\r') 
+
                 writer.add_scalar('dis/src', loss_dis_s.item(), niter)
                 writer.add_scalar('dis/tgt', loss_dis_t.item(), niter)
                 writer.add_scalar('gen', loss_gen.item(), niter)
+                writer.add_scalar('CE/tgt', loss_CE(model2(fake_tgt_x), src_y).item(), niter)
+                writer.add_scalar('CE/src', loss_CE(model1(src_x), src_y).item(), niter)
                 
+                data = []
+                for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
+                            fake_src_x]:
+                    x = x.to(torch.device('cpu'))
+                    if x.size(1) == 1:
+                        x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
+                    data.append(x)
+                grid = make_grid(torch.cat(tuple(data), dim=0))
+                writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
 
             if niter % iter_per_epoch == 0:
                 epoch = niter // iter_per_epoch
 
                 f = open(resultname, 'a')
                 f.write('epoch : {0}\n'.format(epoch))
-                f.write('\tloss_gen1 : {0:0.4f}\n'.format(loss_gen1.item()))
-                f.write('\tloss_gen2 : {0:0.4f}\n'.format(loss_gen2.item()))
-                f.write('\tloss_gen_CE_t : {0:0.4f}\n'.format(loss_gen3.item()))
-                f.write('\tloss_gen_CE_s : {0:0.4f}\n'.format(loss_gen4.item()))                
+                f.write('\tloss_gen_s : {0:0.4f}\n'.format(loss_gen_s.item()))
+                f.write('\tloss_gen_t : {0:0.4f}\n'.format(loss_gen_t.item()))
+                f.write('\tloss_gen_CE_t : {0:0.4f}\n'.format(loss_gen_CE_t.item()))
+                f.write('\tloss_gen_CE_s : {0:0.4f}\n'.format(loss_gen_CE_s.item())) 
+                f.write('\tloss_dis_s1 : {0:0.4f}\n'.format(loss_dis_s1.item()))
+                f.write('\tloss_dis_t1 : {0:0.4f}\n'.format(loss_dis_t1.item()))
+                f.write('\tloss_dis_s2 : {0:0.4f}\n'.format(loss_dis_s2.item()))
+                f.write('\tloss_dis_t2 : {0:0.4f}\n'.format(loss_dis_t2.item()))   
                 f.close()
 
-                if epoch % 1 == 0:
-                    data = []
-                    for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
-                            fake_src_x]:
-                        x = x.to(torch.device('cpu'))
-                        if x.size(1) == 1:
-                            x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
-                        data.append(x)
-                    grid = make_grid(torch.cat(tuple(data), dim=0))
-                    writer.add_image('generated_{0}'.format(exp), grid, epoch)
+                data = []
+
+                for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
+                        fake_src_x]:
+                    x = x.to(torch.device('cpu'))
+                    if x.size(1) == 1:
+                        x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
+                    data.append(x)
+                grid = make_grid(torch.cat(tuple(data), dim=0))
+                # grid = make_grid(torch.cat(tuple(data), dim=0),
+                #                     normalize=True, range=(-1, 1)) # for SVHN?
+                writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
             
-
-            print('epoch {0} ({1}/{2}) '.format(epoch, niter % iter_per_epoch, iter_per_epoch) \
-                + 'dis_s {0:02.4f}, dis_t {1:02.4f}, '.format(loss_dis_s.item(), loss_dis_t.item()) \
-                    + 'loss_gen1 {0:02.4f}, loss_gen2 {1:02.4f} '.format(loss_gen1.item(), loss_gen2.item())
-                    + 'loss_gen_CE_t {0:02.4f}, loss_gen_CE_s {1:02.4f}'.format(loss_gen3.item(), loss_gen4.item()), end='\r') 
-
+              
             if epoch >= opt.num_epochs:
                 break
 
@@ -316,6 +335,4 @@ if __name__ == '__main__':
     opt = arg_parser.parse_args()
     
     
-    opt.digitroot = _DIGIT_ROOT
-    opt.prefix = _PREFIX
     main(opt)
