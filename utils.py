@@ -35,8 +35,13 @@ def load_data(prefix, opt):
 
     tf_toTensor = transforms.Compose([
         transforms.ToTensor(),
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
+    
+    if opt.norm==True:
+        tf_toTensor = transforms.Compose([
+            tf_toTensor, # 0 ~ 1
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # -1 ~ 1
+        ])
     modelsplit = modelname.split('_')
     modelname = prefix + '_' + modelname
 

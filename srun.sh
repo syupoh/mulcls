@@ -24,9 +24,17 @@ then
     #     echo ${printprom}
     #     ${printprom}
     # done
-    printprom="python main_translation.py --batch_size 6 --gpu ${gpu} --prefix translation_noCE"
-    echo ${printprom}
-    ${printprom}
+    beta_set="5 7 10 15" 
+    mu_set="5 7 10 15" 
+    for beta in ${beta_set}
+    do
+      for mu in ${mu_set}
+      do
+        printprom="python main_translation.py --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation"
+        echo ${printprom}
+        ${printprom}
+      done
+    done
 elif [ ${gpu} = 1 ]
 then
     # model_set="svhn_svhn"
@@ -58,7 +66,7 @@ then
     #         ${printprom}
     #     done
     # done
-    printprom="python main_translation.py --batch_size 4 --gpu ${gpu} --prefix translation --model svhn_svhn "
+    printprom="python main_translation.py --batch_size 4 --gpu ${gpu} --prefix translation --model svhn_svhn --norm True "
     echo ${printprom}
     ${printprom}
 fi

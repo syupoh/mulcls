@@ -34,21 +34,25 @@ def main(opt):
         opt.prefix = _PREFIX
     if opt.model=='':
         opt.model = _MODEL
-    opt.beta = _BETA
-    opt.mu = _MU
+    if opt.beta=='':
+        opt.beta = _BETA
+    if opt.mu=='':
+        opt.mu = _MU
     opt.gamma = _GAMMA
     opt.alpha = _ALPHA
-    opt.norm = _NORM
+    if opt.norm=='':
+        opt.norm = _NORM
 
     torch.cuda.set_device(opt.gpu)
     device = torch.device('cuda:{0}'.format(opt.gpu))
     
+    modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.beta, opt.mu)
+
     now = datetime.now()
     curtime = now.isoformat() 
-    run_dir = "runs/{0}_{1}_{2}_ongoing".format(curtime[0:16], opt.model, opt.prefix)
+    run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
     
     modelsplit = opt.model.split('_')
-    modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.dropout_probability, opt.loss4_KLD_dis_rate)
     resultname = '{2}/result_{0}_{1}.txt'.format(modelname, opt.num_epochs, run_dir)
     n_ch = 64
     n_hidden = 5
@@ -110,7 +114,7 @@ def main(opt):
     tgt_train_iter = iter(train_loader2)
 
     if opt.norm==True:
-        X_min = 0 # 0.5 mormalize 는 0~1
+        X_min = -1 # 0.5 mormalize 는 0~1
         X_max = 1
     else:
         X_min = trainset.data.min()
@@ -159,6 +163,7 @@ def main(opt):
     # for i in range(1, 3):
     #     globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  
     # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
+
     opt_gen = torch.optim.Adam(
         chain(gen_st.parameters(), gen_ts.parameters(), model1.parameters(), model2.parameters()), **config2)  
     opt_dis = torch.optim.Adam(
@@ -313,6 +318,9 @@ def main(opt):
                     writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
                     writer.add_image('src_x', src_x[0], niter)
                     writer.add_image('tgt_x', tgt_x[0], niter)
+
+
+
 
             if niter % iter_per_epoch == 0 and niter > 0:
                 with torch.no_grad(): 
