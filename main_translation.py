@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-import random 
-import matplotlib as plt
 import pdb
 import os
 import argparse
 from tensorboardX import SummaryWriter
 
-from Networks import * 
+from Networks import *
+from torchvision.utils import make_grid
 
 from itertools import chain
 from util.image_pool import ImagePool
@@ -16,7 +15,6 @@ from util.sampler import InfiniteSampler
 import utils
 from datetime import datetime
 
-from torchvision.utils import make_grid
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
