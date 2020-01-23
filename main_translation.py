@@ -15,6 +15,9 @@ from util.sampler import InfiniteSampler
 import utils
 from datetime import datetime
 
+from datasets.gta5_Dataset import GTA5_DataLoader
+from datasets.synthia_Dataset import SYNTHIA_DataLoader
+from datasets.cityscapes_Dataset import City_Dataset, City_DataLoader, inv_preprocess, decode_labels
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
@@ -26,6 +29,20 @@ _GAMMA = 1.0
 _ALPHA = 1.0
 _NORM = True
     
+datasets_path = {
+    'cityscapes': {'data_root_path': '/data/syupoh/dataset/cityscapes_ori', 'list_path': './datasets/city_list', 
+                    'image_path':'/data/syupoh/dataset/cityscapes_ori/leftImg8bit',
+                    'gt_path': '/data/syupoh/dataset/cityscapes_ori/gtFine'},
+    'gta5': {'data_root_path': '/data/syupoh/dataset/GTA5', 'list_path': './datasets/gta5_list/',
+                    'image_path':'/data/syupoh/dataset/GTA5/images',
+                    'gt_path': '/data/syupoh/dataset/GTA5/labels'},
+    'synthia': {'data_root_path': '/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES', 'list_path': './datasets/synthia_list/',
+                    'image_path':'/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES/RGB',
+                    'gt_path': '/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES/GT/LABELS'},
+    'NTHU': {'data_root_path': '~/dataset/NTHU_Datasets', 'list_path': './datasets/NTHU_list'}
+    }
+
+
 def main(opt):
     opt.digitroot = _DIGIT_ROOT
     if opt.prefix=='':
@@ -50,7 +67,6 @@ def main(opt):
     curtime = now.isoformat() 
     run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
     
-    modelsplit = opt.model.split('_')
     resultname = '{2}/result_{0}_{1}.txt'.format(modelname, opt.num_epochs, run_dir)
     n_ch = 64
     n_hidden = 5
@@ -68,22 +84,7 @@ def main(opt):
     #########################
     #### DATASET 
     #########################
-
-    if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn' or \
-        modelsplit[0] == 'usps' or modelsplit[0] == 'cifar10' or \
-            modelsplit[0] == 'stl10':
-        model1 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
-        model2 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
-    else:
-        model1 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
-        model2 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
-
-
-    dropout_mask1 = torch.randint(2, (1, 128, 1, 1), dtype=torch.float).cuda()
-    # dropout_mask1 = torch.randint(2,(1,128,4,4), dtype=torch.float).cuda()
-    
-    weights_init_gaussian = weights_init('gaussian')
-
+    modelsplit = opt.model.split('_')
     if modelsplit[0] == 'mnist' or modelsplit[0] == 'usps':
         n_c_in = 1 # number of color channels
     else:
@@ -94,7 +95,8 @@ def main(opt):
     else:
         n_c_out = 3 # number of color channels
 
-    trainset, trainset2, testset = utils.load_data(prefix=opt.prefix, opt=opt)
+
+    trainset, trainset2, testset = utils.load_data(opt=opt)
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset))) # model
     train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset2))) # model
     test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
@@ -117,6 +119,20 @@ def main(opt):
     #########################
     #### Model
     #########################
+    if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn' or \
+        modelsplit[0] == 'usps' or modelsplit[0] == 'cifar10' or \
+            modelsplit[0] == 'stl10':
+        model1 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
+        model2 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
+    else:
+        model1 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
+        model2 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
+
+
+    dropout_mask1 = torch.randint(2, (1, 128, 1, 1), dtype=torch.float).cuda()
+    # dropout_mask1 = torch.randint(2,(1,128,4,4), dtype=torch.float).cuda()
+    
+    weights_init_gaussian = weights_init('gaussian')
 
     for X, Y in train_loader: 
         res_x = X.shape[-1]
@@ -241,11 +257,6 @@ def main(opt):
                 optim.zero_grad()
                 loss.backward(retain_graph=True)
                 optim.step()
-
-
-            # print('epoch {0} ({1}/{2}) '.format(epoch, (niter % iter_per_epoch), iter_per_epoch ) \
-            # + 'loss_dis {0:02.4f}, loss_gen {1:02.4f}'.format(loss_dis.item(), loss_gen.item()), end='\r') 
-
 
             if niter % opt.print_delay == 0 and niter > 0:
                 with torch.no_grad(): 

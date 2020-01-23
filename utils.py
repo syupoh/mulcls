@@ -22,14 +22,14 @@ def add_args(parser):
     return parser
 
 
-def load_data(prefix, opt):
-    modelname = opt.model
+def load_data(opt):
     batch_size = opt.batch_size
+    modelsplit = opt.model.split('_')
 
     tf_to32 = transforms.Compose([
         transforms.Resize((32,32)),
         transforms.ToTensor(),
-        # transforms.Normalize((0.5), (0.5)),
+        transforms.Normalize((0.5), (0.5)),
         transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
     ])
 
@@ -37,13 +37,19 @@ def load_data(prefix, opt):
         transforms.ToTensor(),
     ])
     
-    if opt.norm==True:
-        tf_toTensor = transforms.Compose([
-            tf_toTensor, # 0 ~ 1
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # -1 ~ 1
-        ])
-    modelsplit = modelname.split('_')
-    modelname = prefix + '_' + modelname
+    if opt.norm == True:
+        if modelsplit[0] == 'mnist' and modelsplit[1] == 'mnist':
+            tf_toTensor = transforms.Compose([
+                tf_toTensor, # 0 ~ 1
+                transforms.Normalize((0.5), (0.5)),
+            ])
+
+        else :
+            tf_toTensor = transforms.Compose([
+                tf_toTensor, # 0 ~ 1
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # -1 ~ 1
+            ])
+
 
     if modelsplit[0]=='mnist' or modelsplit[1]=='mnist':
         if modelsplit[0]=='svhn' or modelsplit[1]=='svhn':
