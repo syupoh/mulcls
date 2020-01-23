@@ -31,8 +31,13 @@ def load_data(opt):
         transforms.ToTensor(),
         # transforms.Normalize((0.5,), (0.5,)),
         transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # -1 ~ 1
     ])
+
+    if opt.norm == True:
+        tf_to32 = transforms.Compose([
+            tf_to32,
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # -1 ~ 1
+        ])
 
     
     if opt.norm == True:

@@ -79,12 +79,12 @@ def main(opt):
     #### DATASET 
     #########################
     modelsplit = opt.model.split('_')
-    if modelsplit[0] == 'mnist' or modelsplit[0] == 'usps':
+    if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
         n_c_in = 1 # number of color channels
     else:
         n_c_in = 3 # number of color channels
         
-    if modelsplit[1] == 'mnist' or modelsplit[1] == 'usps':
+    if (modelsplit[1] == 'mnist' or modelsplit[1] == 'usps') and modelsplit[0] != 'svhn':
         n_c_out = 1 # number of color channels
     else:
         n_c_out = 3 # number of color channels
