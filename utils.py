@@ -2,21 +2,23 @@ from Networks import *
 
 def add_args(parser):
     parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=6)
     parser.add_argument('--valid_epoch', type=int, default=10)
-    parser.add_argument('--prefix', type=str, default='')
-    parser.add_argument('--model', type=str, default='mnist_mnist')
+    parser.add_argument('--print_delay', type=int, default=500)
     parser.add_argument('--num_epochs', type=int, default=60)
+    parser.add_argument('--prefix', type=str, default='')
+    parser.add_argument('--model', type=str, default='')
+    parser.add_argument('--norm', type=bool, default='')
+    parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
     parser.add_argument('--pretrained', type=str, default='model/.pth')
     parser.add_argument('--dropout_probability', type=float, default=0.5)
     parser.add_argument('--learning_rate', type=float, default=1e-4)
-    parser.add_argument('--loss4_KLD_dis_rate', type=float, default=0.1)
-    parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
     parser.add_argument('--weight_decay', type=float, default=1e-5)
-    parser.add_argument('--beta', type=float, default=10)
-    parser.add_argument('--mu', type=float, default=10)
-    parser.add_argument('--gamma', type=float, default=0.1)
+    parser.add_argument('--loss4_KLD_dis_rate', type=float, default=0.1)
     parser.add_argument('--alpha', type=float, default=0.1)
+    parser.add_argument('--beta', type=float, default=10)
+    parser.add_argument('--gamma', type=float, default=0.1)
+    parser.add_argument('--mu', type=float, default=10)
     return parser
 
 
@@ -27,20 +29,24 @@ def load_data(prefix, opt):
     tf_to32 = transforms.Compose([
         transforms.Resize((32,32)),
         transforms.ToTensor(),
-        transforms.Lambda(lambda x: x.repeat(3, 1, 1))
+        # transforms.Normalize((0.5), (0.5)),
+        transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
     ])
 
     tf_toTensor = transforms.Compose([
-        transforms.ToTensor()
+        transforms.ToTensor(),
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     modelsplit = modelname.split('_')
     modelname = prefix + '_' + modelname
+
     if modelsplit[0]=='mnist' or modelsplit[1]=='mnist':
         if modelsplit[0]=='svhn' or modelsplit[1]=='svhn':
             tf_MNIST = tf_to32
         else:
             tf_MNIST = tf_toTensor
 
+    
 
     digitroot = opt.digitroot
     if modelsplit[0]=='mnist':
