@@ -66,8 +66,16 @@ then
     #         ${printprom}
     #     done
     # done
-    printprom="python main_translation.py --batch_size 4 --gpu ${gpu} --prefix translation --model svhn_svhn --norm True "
-    echo ${printprom}
-    ${printprom}
+    beta_set="5 7 10 15" 
+    mu_set="5 7 10 15" 
+    for beta in ${beta_set}
+    do
+      for mu in ${mu_set}
+      do
+        printprom="python main_translation.py --batch_size 4 --model svhn_svhn --beta ${beta} --mu ${mu} --batch_size 4 --gpu ${gpu} --prefix translation --norm True"
+        echo ${printprom}
+        ${printprom}
+      done
+    done
 fi
 

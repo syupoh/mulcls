@@ -15,9 +15,6 @@ from util.sampler import InfiniteSampler
 import utils
 from datetime import datetime
 
-from datasets.gta5_Dataset import GTA5_DataLoader
-from datasets.synthia_Dataset import SYNTHIA_DataLoader
-from datasets.cityscapes_Dataset import City_Dataset, City_DataLoader, inv_preprocess, decode_labels
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
@@ -28,19 +25,7 @@ _MU = 10.0
 _GAMMA = 1.0
 _ALPHA = 1.0
 _NORM = True
-    
-datasets_path = {
-    'cityscapes': {'data_root_path': '/data/syupoh/dataset/cityscapes_ori', 'list_path': './datasets/city_list', 
-                    'image_path':'/data/syupoh/dataset/cityscapes_ori/leftImg8bit',
-                    'gt_path': '/data/syupoh/dataset/cityscapes_ori/gtFine'},
-    'gta5': {'data_root_path': '/data/syupoh/dataset/GTA5', 'list_path': './datasets/gta5_list/',
-                    'image_path':'/data/syupoh/dataset/GTA5/images',
-                    'gt_path': '/data/syupoh/dataset/GTA5/labels'},
-    'synthia': {'data_root_path': '/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES', 'list_path': './datasets/synthia_list/',
-                    'image_path':'/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES/RGB',
-                    'gt_path': '/data/syupoh/dataset/SYNTHIA_RAND_CITYSCAPES/GT/LABELS'},
-    'NTHU': {'data_root_path': '~/dataset/NTHU_Datasets', 'list_path': './datasets/NTHU_list'}
-    }
+
 
 
 def main(opt):
@@ -293,6 +278,7 @@ def main(opt):
                     writer.add_scalar('CE/tgt', loss_CE(model2(fake_tgt_x), src_y).item(), niter)
                     writer.add_scalar('CE/src', loss_CE(model1(src_x), src_y).item(), niter)
                     
+                    # pdb.set_trace()
                     if niter % (opt.print_delay*10) == 0 :
                         data_grid = []
                         for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
@@ -304,6 +290,7 @@ def main(opt):
                         grid = make_grid(torch.cat(tuple(data_grid), dim=0),
                                         normalize=True, range=(X_min, X_max)) # for SVHN?
                         writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
+
 
 
             if niter % iter_per_epoch == 0 and niter > 0:

@@ -5,7 +5,7 @@ def add_args(parser):
     parser.add_argument('--batch_size', type=int, default=6)
     parser.add_argument('--valid_epoch', type=int, default=10)
     parser.add_argument('--print_delay', type=int, default=500)
-    parser.add_argument('--num_epochs', type=int, default=60)
+    parser.add_argument('--num_epochs', type=int, default=25)
     parser.add_argument('--prefix', type=str, default='')
     parser.add_argument('--model', type=str, default='')
     parser.add_argument('--norm', type=bool, default='')
