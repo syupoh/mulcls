@@ -115,29 +115,14 @@ def main(opt):
 
 
         for epoch in range(opt.num_epochs):
-            for i in range(1, 5):
-                globals()['model{0}'.format(i)].train()
-            #model1.train() # dropout use
-
             for X, Y in train_loader: 
+                for i in range(1, 5):
+                    globals()['model{0}'.format(i)].train()
+                #model1.train() # dropout use
+
                 X = X.cuda() 
                 Y = Y.cuda() 
                 
-                # for i in range(1, 4):
-                #     globals()['prediction{0}'.format(i)] = globals()['model{0}'.format(i)](X)
-                #     globals()['loss{0}'.format(i)] = loss_CE(globals()['prediction{0}'.format(i)], Y)
-                #     globals()['optimizer{0}'.format(i)].zero_grad()
-                #     globals()['loss{0}'.format(i)].backward()
-                #     globals()['optimizer{0}'.format(i)].step()
-                    
-                #     globals()['predicted_classes{0}'.format(i)] \
-                #         = torch.argmax(globals()['prediction{0}'.format(i)], 1) 
-                #     globals()['correct_count{0}'.format(i)] \
-                #         = (globals()['predicted_classes{0}'.format(i)] == Y)
-                #     globals()['trainaccuracy{0}'.format(i)] \
-                #         = (globals()['correct_count{0}'.format(i)].float()).sum()
-                #     globals()['trainaccuracy{0}'.format(i)] /= len(Y.cpu()) * 100
-
                 prediction1 = model1(X)
                 predicted_classes1 = torch.argmax(prediction1, 1) 
                 correct_count1 = (predicted_classes1 == Y) # average of correct count 
@@ -319,21 +304,13 @@ def main(opt):
                     nagree = nagree + (agreement).int().sum()
 
 
-                avgaccuracy1 = (avgaccuracy1/n) *100
+                avgaccuracy1 
+                = (avgaccuracy1/n) *100
                 avgaccuracy2 = (avgaccuracy2/n) *100
                 avgaccuracy3 = (avgaccuracy3/n) *100
                 avgaccuracy4 = (avgaccuracy4/n) *100
 
 
-                # agreement = '{0}/{1}'.format(nagree, n)
-                # data = ["epoch", "agreement", "trainaccuracy1", "trainaccuracy2", "trainaccuracy3", "testaccuracy1", \
-                #     "testaccuracy2", "testaccuracy3", "lossdiv", "lossdiv2"]
-                # prompt=''
-                # for name in data:
-                #     prompt = '{0}{1} : {2}\n'.format(prompt, name, globals()[name])   
-                # f = open(resultname, 'a')
-                # f.write(prompt)
-                # f.close()
                 
                 f = open(resultname, 'a')
                 f.write('epoch : {0}\n'.format(epoch))

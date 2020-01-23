@@ -26,8 +26,6 @@ _GAMMA = 1.0
 _ALPHA = 1.0
 _NORM = True
 
-
-
 def main(opt):
     opt.digitroot = _DIGIT_ROOT
     if opt.prefix=='':
@@ -40,14 +38,15 @@ def main(opt):
         opt.mu = _MU
     opt.gamma = _GAMMA
     opt.alpha = _ALPHA
-    if opt.norm=='':
+    if opt.norm == None:
         opt.norm = _NORM
+
+    modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.beta, opt.mu)
+    modelpath = 'model/'+modelname+'.pth'
 
     torch.cuda.set_device(opt.gpu)
     device = torch.device('cuda:{0}'.format(opt.gpu))
     
-    modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}'.format(opt.prefix, opt.model, opt.beta, opt.mu)
-
     now = datetime.now()
     curtime = now.isoformat() 
     run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
@@ -56,6 +55,16 @@ def main(opt):
     n_ch = 64
     n_hidden = 5
     n_resblock = 4
+    
+
+    prompt = ''
+    prompt += ('====================================\n')
+    prompt += run_dir + '\n'
+    for arg in vars(opt):
+        prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+    prompt += ('====================================\n')
+    print(prompt, end='')
+
     # opt.model = 'svhn_mnist'
     # opt.model = 'mnist_usps'
     # opt.model = 'usps_mnist'
@@ -92,7 +101,7 @@ def main(opt):
     src_train_iter = iter(train_loader)
     tgt_train_iter = iter(train_loader2)
 
-    if opt.norm==True:
+    if opt.norm == True:
         X_min = -1 # 0.5 mormalize 는 0~1
         X_max = 1
     else:
@@ -165,17 +174,8 @@ def main(opt):
     #### argument print
     #########################
 
-    modelpath = 'model/'+modelname+'.pth'
-
     writer = SummaryWriter(run_dir)
 
-    prompt = ''
-    prompt += ('====================================\n')
-    prompt += run_dir + '\n'
-    for arg in vars(opt):
-        prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
-    prompt += ('====================================\n')
-    print(prompt, end='')
 
     f = open(resultname, 'w')
     f.write(prompt)
@@ -200,10 +200,11 @@ def main(opt):
 
         niter = 0
         epoch = 0
-        model1.train()
-        model2.train()
 
         while True:
+            model1.train()
+            model2.train()
+
             niter += 1
             src_x, src_y = next(src_train_iter)
             tgt_x, tgt_y = next(tgt_train_iter)
@@ -211,6 +212,7 @@ def main(opt):
             src_x = src_x.cuda()
             src_y = src_y.cuda()
             tgt_x = tgt_x.cuda()
+
 
 
             fake_tgt_x = gen_st(src_x)
@@ -258,7 +260,7 @@ def main(opt):
                     loss_gen_CE_t = opt.beta * loss_CE(model2(fake_tgt_x), src_y)
                     loss_gen_CE_s = opt.mu * loss_CE(model1(src_x), src_y)
         ###########################
-
+        
                     print('epoch {0} ({1}/{2}) '.format(epoch, (niter % iter_per_epoch), iter_per_epoch ) \
                     + 'dis_s1 {0:02.4f}, dis_s2 {1:02.4f}, '.format(loss_dis_s1.item(), loss_dis_s2.item()) \
                         + 'dis_t1 {0:02.4f}, dis_t2 {1:02.4f}, '.format(loss_dis_t1.item(), loss_dis_t2.item()) \
@@ -288,7 +290,7 @@ def main(opt):
                                 x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
                             data_grid.append(x)
                         grid = make_grid(torch.cat(tuple(data_grid), dim=0),
-                                        normalize=True, range=(X_min, X_max)) # for SVHN?
+                                        normalize=True, range=(X_min, X_max), nrow=opt.batch_size) # for SVHN?
                         writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
 
 
@@ -329,7 +331,7 @@ def main(opt):
 
                     writer.add_scalar('accuracy/tgt', avgaccuracy1, niter)
                     writer.add_scalar('accuracy/src', avgaccuracy2, niter)
-                    writer.add_scalar('agreement', nagree, niter)
+                    writer.add_scalar('agreement', (nagree/n)*100, niter)
                     
                     f = open(resultname, 'a')
                     f.write('epoch : {0}\n'.format(epoch))
@@ -354,6 +356,6 @@ def main(opt):
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
     arg_parser = utils.add_args(arg_parser)
-    opt = arg_parser.parse_args()
+    opt_ = arg_parser.parse_args()
     
-    main(opt)
+    main(opt_)

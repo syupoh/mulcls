@@ -26,15 +26,57 @@ then
     # done
     beta_set="5 7 10 15" 
     mu_set="5 7 10 15" 
-    for beta in ${beta_set}
-    do
-      for mu in ${mu_set}
-      do
-        printprom="python main_translation.py --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation"
-        echo ${printprom}
-        ${printprom}
-      done
-    done
+    # for beta in ${beta_set}
+    # do
+    #   for mu in ${mu_set}
+    #   do
+    #     printprom="python main_translation.py --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation"
+    #     echo ${printprom}
+    #     ${printprom}
+    #   done
+    # done
+    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
+    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
+    echo ${printprom}
+    ${printprom}
 elif [ ${gpu} = 1 ]
 then
     # model_set="svhn_svhn"
