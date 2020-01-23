@@ -72,13 +72,9 @@ def main(opt):
     if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn' or \
         modelsplit[0] == 'usps' or modelsplit[0] == 'cifar10' or \
             modelsplit[0] == 'stl10':
-        # for i in range(1, 3):
-        #     globals()['model{0}'.format(i)] = conv9(p=opt.dropout_probability).cuda() 
         model1 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
         model2 = conv9(p=opt.dropout_probability).cuda() # 3x32x32 -> 1x128x1x1 (before FC) 
     else:
-        # for i in range(1, 3):
-        #     globals()['model{0}'.format(i)] = conv3(p=opt.dropout_probability).cuda() 
         model1 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
         model2 = conv3(p=opt.dropout_probability).cuda() # 1x28x28 -> 1x128x4x4 (before FC) 
 
@@ -90,10 +86,8 @@ def main(opt):
 
     if modelsplit[0] == 'mnist' or modelsplit[0] == 'usps':
         n_c_in = 1 # number of color channels
-        singlechannel = True
     else:
         n_c_in = 3 # number of color channels
-        singlechannel = False
         
     if modelsplit[1] == 'mnist' or modelsplit[1] == 'usps':
         n_c_out = 1 # number of color channels
@@ -125,12 +119,10 @@ def main(opt):
     #########################
 
     for X, Y in train_loader: 
-        # pdb.set_trace()
         res_x = X.shape[-1]
         break
     
     for X, Y in train_loader2: 
-        # pdb.set_trace()
         res_y = X.shape[-1]
         break
 
@@ -158,14 +150,10 @@ def main(opt):
 
     config2 = {'lr': opt.learning_rate, 'weight_decay': opt.weight_decay, 'betas': (0.5, 0.999)}
 
-    # for i in range(1, 3):
-    #     globals()['optimizer{0}'.format(i)] = torch.optim.Adam(globals()['model{0}'.format(i)].parameters(), lr=opt.learning_rate)  
-    # optimizer1 = torch.optim.Adam(model1.parameters(), lr=opt.learning_rate)  # 1x28x28 -> 1x128x4x4 (before FC) 
-
     opt_gen = torch.optim.Adam(
         chain(gen_st.parameters(), gen_ts.parameters(), model1.parameters(), model2.parameters()), **config2)  
     opt_dis = torch.optim.Adam(
-        chain(dis_s.parameters(),dis_t.parameters()), **config2)  
+        chain(dis_s.parameters(), dis_t.parameters()), **config2)  
 
     loss_CE = torch.nn.CrossEntropyLoss().cuda()
     loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
@@ -209,15 +197,10 @@ def main(opt):
         print("model train..")
         print(modelname)
 
-
         niter = 0
         epoch = 0
         model1.train()
         model2.train()
-        # for i in range(1, 3):
-        #     globals()['model{0}'.format(i)].train()
-        #model1.train() # dropout use
-
 
         while True:
             niter += 1
@@ -299,25 +282,17 @@ def main(opt):
                     writer.add_scalar('CE/tgt', loss_CE(model2(fake_tgt_x), src_y).item(), niter)
                     writer.add_scalar('CE/src', loss_CE(model1(src_x), src_y).item(), niter)
                     
-                    data_grid = []
-                    for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
-                                fake_src_x]:
-                        x = x.to(torch.device('cpu'))
-                        if x.size(1) == 1:
-                            x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
-                        data_grid.append(x)
-                    grid = make_grid(torch.cat(tuple(data_grid), dim=0),
-                                    normalize=True, range=(X_min, X_max)) # for SVHN?
-                    # if modelsplit[0] == 'svhn' or modelsplit[1] == 'svhn':
-                    #     grid = make_grid(torch.cat(tuple(data_grid), dim=0),
-                    #                     normalize=True, range=(X_min, X_max)) # for SVHN?
-                    # else:
-                    #     grid = make_grid(torch.cat(tuple(data_grid), dim=0))
-                    writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
-                    writer.add_image('src_x', src_x[0], niter)
-                    writer.add_image('tgt_x', tgt_x[0], niter)
-
-
+                    if niter % (opt.print_delay*10) == 0 :
+                        data_grid = []
+                        for x in [src_x, fake_tgt_x, fake_back_src_x, tgt_x,
+                                    fake_src_x]:
+                            x = x.to(torch.device('cpu'))
+                            if x.size(1) == 1:
+                                x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
+                            data_grid.append(x)
+                        grid = make_grid(torch.cat(tuple(data_grid), dim=0),
+                                        normalize=True, range=(X_min, X_max)) # for SVHN?
+                        writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
 
 
             if niter % iter_per_epoch == 0 and niter > 0:
@@ -326,9 +301,6 @@ def main(opt):
 
                     model1.eval()
                     model2.eval()
-                    # for i in range(1, 3):
-                    #     globals()['model{0}'.format(i)].eval()
-                    #model1.eval() # dropout use
 
                     avgaccuracy1 = 0
                     avgaccuracy2 = 0
@@ -355,10 +327,11 @@ def main(opt):
                     avgaccuracy1 = (avgaccuracy1/n) *100
                     avgaccuracy2 = (avgaccuracy2/n) *100
                     agreement = (predicted_classes1 == predicted_classes2)
+                    nagree = nagree + (agreement).int().sum()
 
                     writer.add_scalar('accuracy/tgt', avgaccuracy1, niter)
                     writer.add_scalar('accuracy/src', avgaccuracy2, niter)
-                    # writer.add_scalar('agreement', agreement, niter)
+                    writer.add_scalar('agreement', nagree, niter)
                     
                     f = open(resultname, 'a')
                     f.write('epoch : {0}\n'.format(epoch))
@@ -372,23 +345,17 @@ def main(opt):
                     f.write('\tloss_dis_t2 : {0:0.4f}\n'.format(loss_dis_t2.item())) 
                     f.write('\tavgaccuracy1 : {0:0.2f}\n'.format(avgaccuracy1))
                     f.write('\tavgaccuracy2 : {0:0.2f}\n'.format(avgaccuracy2)) 
-                    # f.write('\tagreement : {0}\n'.format(agreement))  
+                    f.write('\tagreement : {0}\n'.format(nagree))  
                     f.close()
-
-                        
               
             if epoch >= opt.num_epochs:
                 os.rename(run_dir, run_dir[:-8])
                 break
-            
 
-            
 
-    
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser()
     arg_parser = utils.add_args(arg_parser)
     opt = arg_parser.parse_args()
-    
     
     main(opt)
