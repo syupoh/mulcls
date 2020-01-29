@@ -145,6 +145,10 @@ def main(opt):
     dis_s = Discriminator(n_ch=n_ch, res=res_x, n_c_in=n_c_in).cuda()
     dis_t = Discriminator(n_ch=n_ch, res=res_y, n_c_in=n_c_out).cuda()
 
+    print(gen_st)
+    print(dis_s)
+    print(model1)
+    pdb.set_trace()
     gen_st.apply(weights_init_gaussian)
     gen_ts.apply(weights_init_gaussian)
     dis_s.apply(weights_init_gaussian)

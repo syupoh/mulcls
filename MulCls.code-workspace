@@ -1,16 +1,20 @@
 {
 	"folders": [
-		// {
-		// 	"name": "DTA",
-		// 	"path": "/data/syupoh/python/_mine/DTA"
-		// },
+		{
+			"name": "dataset",
+			"path": "../../../dataset/"
+		},
+		{
+			"name": "Examples",
+			"path": "../../Examples"
+		},
 		{
 			"name": "MulCls",
 			"path": "."
-		}
+		},
 	],
 	"settings": {
-		"python.pythonPath": "~/anaconda3/envs/mulcls/bin/python",
+		"python.pythonPath": "~/anaconda3/envs/sbada/bin/python",
 		"git.ignoreLimitWarning": true,
 		"ignorePatterns":[".vscode/*.py", "**/site-packages/**/*.py"],
 		"maxNumberOfProblems":30
