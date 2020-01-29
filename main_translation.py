@@ -343,8 +343,8 @@ def main(opt):
                     f.write('\tloss_dis_t1 : {0:0.4f}\n'.format(loss_dis_t1.item()))
                     f.write('\tloss_dis_s2 : {0:0.4f}\n'.format(loss_dis_s2.item()))
                     f.write('\tloss_dis_t2 : {0:0.4f}\n'.format(loss_dis_t2.item())) 
-                    f.write('\tavgaccuracy1 : {0:0.2f}\n'.format(avgaccuracy1))
-                    f.write('\tavgaccuracy2 : {0:0.2f}\n'.format(avgaccuracy2)) 
+                    f.write('\tavgaccuracy_tgt : {0:0.2f}\n'.format(avgaccuracy1))
+                    f.write('\tavgaccuracy_src : {0:0.2f}\n'.format(avgaccuracy2)) 
                     f.write('\tagreement : {0}\n'.format(nagree))  
                     f.close()
               

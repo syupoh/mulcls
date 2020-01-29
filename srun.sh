@@ -24,59 +24,17 @@ then
     #     echo ${printprom}
     #     ${printprom}
     # done
-    beta_set="5 7 10 15" 
-    mu_set="5 7 10 15" 
-    # for beta in ${beta_set}
-    # do
-    #   for mu in ${mu_set}
-    #   do
-    #     printprom="python main_translation.py --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation"
-    #     echo ${printprom}
-    #     ${printprom}
-    #   done
-    # done
-    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 5 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 3 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 7 --mu 10 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 3 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 5 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
-    printprom="python main_translation.py --model mnist_mnist --beta 10 --mu 7 --batch_size 6 --gpu ${gpu} --prefix translation"
-    echo ${printprom}
-    ${printprom}
+    beta_set="1" 
+    mu_set="3 5 7 10 15" 
+    for beta in ${beta_set}
+    do
+      for mu in ${mu_set}
+      do
+        printprom="python main_translation.py --model mnist_mnist --batch_size 6 --beta ${beta} --mu ${mu} --gpu ${gpu} --prefix translation --norm True"
+        echo ${printprom}
+        ${printprom}
+      done
+    done
 elif [ ${gpu} = 1 ]
 then
     # model_set="svhn_svhn"
@@ -91,9 +49,19 @@ then
     #         ${printprom}
     #     done
     # done
-    printprom="python main_translation.py --model svhn_svhn --batch_size 4 --gpu ${gpu} --prefix translation_noCE "
-    echo ${printprom}
-    ${printprom}
+    
+    beta_set="1 2 3 4" 
+    mu_set="1 2 3 4 5 6 7 8 9 10" 
+    for beta in ${beta_set}
+    do
+      for mu in ${mu_set}
+      do
+        printprom="python main_translation.py --batch_size 4 --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation --norm True"
+        echo ${printprom}
+        ${printprom}
+      done
+    done
+    
 elif [ ${gpu} = 2 ]
 then
     # model_set="usps_usps"
@@ -108,8 +76,8 @@ then
     #         ${printprom}
     #     done
     # done
-    beta_set="5 7 10 15" 
-    mu_set="5 7 10 15" 
+    beta_set="1 2 3 4" 
+    mu_set="1 2 3 4 5 6 7 8 9 10" 
     for beta in ${beta_set}
     do
       for mu in ${mu_set}
