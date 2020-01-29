@@ -61,6 +61,8 @@ then
         ${printprom}
       done
     done
+    python main_acgan_translation.py --batch_size 512 --model mnist_mnist --gpu ${gpu}
+    python main_acgan_translation.py --batch_size 256 --model svhn_svhn --gpu ${gpu}
     
 elif [ ${gpu} = 2 ]
 then
@@ -87,5 +89,6 @@ then
         ${printprom}
       done
     done
+    python main_acgan_translation.py --batch_size 256 --model mnist_svhn --gpu ${gpu}
 fi
 

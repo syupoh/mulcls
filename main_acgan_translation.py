@@ -54,6 +54,64 @@ cuda = True if torch.cuda.is_available() else False
 if torch.cuda.is_available():
     torch.cuda.set_device(opt.gpu)
 
+# Configure data loader
+
+import utils
+trainset, trainset2, testset = utils.load_data(opt=opt)
+train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset))) # model
+train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset2))) # model
+test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
+
+n_sample = max(len(trainset), len(trainset2))
+iter_per_epoch = n_sample // opt.batch_size + 1
+
+src_train_iter = iter(train_loader)
+tgt_train_iter = iter(train_loader2)
+
+if opt.norm == True:
+    X_min = -1 # 0.5 mormalize 는 0~1
+    X_max = 1
+else:
+    X_min = trainset.data.min()
+    X_max = trainset.data.max()
+
+# dataloader = torch.utils.data.DataLoader(
+#     datasets.MNIST(
+#         "~/dataset/digits/MNIST_data/",
+#         train=True,
+#         download=True,
+#         transform=transforms.Compose(
+#             [transforms.Resize(opt.img_size), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
+#         ),
+#     ),
+#     batch_size=opt.batch_size,
+#     shuffle=True,
+# )
+
+for X, Y in train_loader: 
+    res_x = X.shape[-1]
+    break
+
+for X, Y in train_loader2: 
+    res_y = X.shape[-1]
+    break
+
+modelsplit = opt.model.split('_')
+if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
+    n_c_in = 1 # number of color channels
+else:
+    n_c_in = 3 # number of color channels
+    
+if (modelsplit[1] == 'mnist' or modelsplit[1] == 'usps') and modelsplit[0] != 'svhn':
+    n_c_out = 1 # number of color channels
+else:
+    n_c_out = 3 # number of color channels
+    opt.channels = 3
+
+n_ch = 64
+n_hidden = 5
+n_resblock = 4
+
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
@@ -148,55 +206,9 @@ loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
 # loss_LS = GANLoss(device, use_lsgan=True)
 
 
-# Configure data loader
-
-import utils
-trainset, trainset2, testset = utils.load_data(opt=opt)
-train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset))) # model
-train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset2))) # model
-test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
-
-n_sample = max(len(trainset), len(trainset2))
-iter_per_epoch = n_sample // opt.batch_size + 1
-
-src_train_iter = iter(train_loader)
-tgt_train_iter = iter(train_loader2)
-
-if opt.norm == True:
-    X_min = -1 # 0.5 mormalize 는 0~1
-    X_max = 1
-else:
-    X_min = trainset.data.min()
-    X_max = trainset.data.max()
-
-dataloader = torch.utils.data.DataLoader(
-    datasets.MNIST(
-        "~/dataset/digits/MNIST_data/",
-        train=True,
-        download=True,
-        transform=transforms.Compose(
-            [transforms.Resize(opt.img_size), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
-        ),
-    ),
-    batch_size=opt.batch_size,
-    shuffle=True,
-)
 
 # Initialize generator and discriminator
 
-for X, Y in train_loader: 
-    res_x = X.shape[-1]
-    break
-
-for X, Y in train_loader2: 
-    res_y = X.shape[-1]
-    break
-
-n_ch = 64
-n_hidden = 5
-n_resblock = 4
-n_c_in = 1
-n_c_out = 1
 
 gen_st = Generator(n_hidden=n_hidden, n_resblock=n_resblock, \
     n_ch=n_ch, res=res_x, n_c_in=n_c_in, n_c_out=n_c_out).cuda()
@@ -279,38 +291,67 @@ while True:
     optimizer_D.zero_grad()
 
     # Loss for real images
+    # real_pred, real_aux = discriminator(src_x)
+    # d_real_loss = (adversarial_loss(real_pred, valid) + auxiliary_loss(real_aux, src_y)) / 2
+
     real_pred, real_aux = discriminator(src_x)
-    d_real_loss = (adversarial_loss(real_pred, valid) + auxiliary_loss(real_aux, src_y)) / 2
+    d_real_loss = 0.5 * (auxiliary_loss(real_aux, src_y)) 
+
+    tgt_pred, tgt_aux = discriminator(tgt_x)
+    d_real_loss += 0.5 * (adversarial_loss(tgt_pred, valid)) 
 
     # Loss for fake images
     fake_pred, fake_aux = discriminator(fake_tgt_x.detach())
-    d_fake_loss = (adversarial_loss(fake_pred, fake) + auxiliary_loss(fake_aux, src_y)) / 2
+    d_fake_loss = 0.5 * (adversarial_loss(fake_pred, fake) + auxiliary_loss(fake_aux, src_y)) 
 
     # Total discriminator loss
-    d_loss = (d_real_loss + d_fake_loss) / 2
+    d_loss = 0.5 * (d_real_loss + d_fake_loss) 
 
     # Calculate discriminator accuracy
-    pred = np.concatenate([real_aux.data.cpu().numpy(), fake_aux.data.cpu().numpy()], axis=0)
-    gt = np.concatenate([src_y.data.cpu().numpy(), src_y.data.cpu().numpy()], axis=0)
-    d_acc = np.mean(np.argmax(pred, axis=1) == gt)
+    # pred = np.concatenate([real_aux.data.cpu().numpy(), fake_aux.data.cpu().numpy()], axis=0)
+    # gt = np.concatenate([src_y.data.cpu().numpy(), src_y.data.cpu().numpy()], axis=0)
+    # d_acc = np.mean(np.argmax(pred, axis=1) == gt)
 
+    d_acc_src = np.mean(np.argmax(real_aux.data.cpu().numpy(), axis=1) == src_y.data.cpu().numpy())
+    d_acc_tgt = np.mean(np.argmax(fake_aux.data.cpu().numpy(), axis=1) == src_y.data.cpu().numpy())
     d_loss.backward()
     optimizer_D.step()
 
     print('epoch {0} ({1}/{2}) '.format(epoch, (niter % iter_per_epoch), iter_per_epoch ) \
-    + 'D loss {0:02.4f}, acc {1:02.4f}, G loss{2:02.4f}'.format(d_loss.item(), 100 * d_acc, g_loss.item()), end='\r')
+    + 'D loss {0:02.4f}, acc_s {1:02.4f}, acc_t {2:02.4f}, G loss {3:02.4f}'.format(d_loss.item(), 100 * d_acc_src, 100*d_acc_tgt, g_loss.item()), end='\r')
 
     writer.add_scalar('{0}/d_loss'.format(opt.prefix), d_loss.item(), niter)
-    writer.add_scalar('{0}/d_acc'.format(opt.prefix), 100 * d_acc.item(), niter)
+    writer.add_scalar('{0}/d_acc_src'.format(opt.prefix), 100 * d_acc_src.item(), niter)
+    writer.add_scalar('{0}/d_acc_tgt'.format(opt.prefix), 100 * d_acc_tgt.item(), niter)
     writer.add_scalar('{0}/g_loss'.format(opt.prefix), g_loss.item(), niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
-        epoch = niter // iter_per_epoch
+        with torch.no_grad(): 
+            epoch = niter // iter_per_epoch
+
+            avgaccuracy1 = 0
+            n = 0
+            nagree = 0
+        
+            for X, Y in test_loader: 
+                n += X.size()[0]
+                X_test = X.cuda() 
+                Y_test = Y.cuda() 
+
+                val, prediction1 = discriminator(X_test) #
+                predicted_classes1 = torch.argmax(prediction1, 1) 
+                correct_count1 = (predicted_classes1 == Y_test) 
+                testaccuracy1 = correct_count1.float().sum()
+                avgaccuracy1 += testaccuracy1
+
+            avgaccuracy1 = (avgaccuracy1/n) *100
+            writer.add_scalar('{0}/d_acc_test'.format(opt.prefix), avgaccuracy1, niter)
+                
 
     if niter % (opt.sample_interval) == 0 :
         data_grid = []
-        for x in [src_x[0:opt.display], fake_tgt_x[0:opt.display]]:
-            x = x.to(torch.device('cpu'))
+        for x in [src_x, fake_tgt_x, tgt_x]:
+            x = x[0:opt.display].to(torch.device('cpu'))
             if x.size(1) == 1:
                 x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
             data_grid.append(x)
