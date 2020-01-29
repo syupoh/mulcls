@@ -1,0 +1,18 @@
+{
+	"folders": [
+		// {
+		// 	"name": "DTA",
+		// 	"path": "/data/syupoh/python/_mine/DTA"
+		// },
+		{
+			"name": "MulCls",
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.pythonPath": "~/anaconda3/envs/mulcls/bin/python",
+		"git.ignoreLimitWarning": true,
+		"ignorePatterns":[".vscode/*.py", "**/site-packages/**/*.py"],
+		"maxNumberOfProblems":30
+	}
+}

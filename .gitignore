@@ -20,7 +20,7 @@ MNIST_data/raw/t10k-images-idx3-ubyte
 MNIST_data/raw/t10k-labels-idx1-ubyte
 MNIST_data/raw/train-images-idx3-ubyte
 MNIST_data/raw/train-labels-idx1-ubyte
-MulCls.code-workspace
+# MulCls.code-workspace
 model
 mcd.py
 result
