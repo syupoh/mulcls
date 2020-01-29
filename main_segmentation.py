@@ -15,6 +15,9 @@ from util.sampler import InfiniteSampler
 import utils
 from datetime import datetime
 
+from datasets.cityscapes_Dataset import City_Dataset, City_DataLoader, inv_preprocess, decode_labels
+from datasets.gta5_Dataset import GTA5_DataLoader, GTA5_Dataset
+from datasets.synthia_Dataset import SYNTHIA_Dataset
 # from dropout import create_adversarial_dropout_mask, calculate_jacobians
 
 _DIGIT_ROOT = '~/dataset/digits/'
