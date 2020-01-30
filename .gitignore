@@ -24,5 +24,5 @@ MNIST_data/raw/train-labels-idx1-ubyte
 model
 mcd.py
 result
-runs
+runs*
 practice*

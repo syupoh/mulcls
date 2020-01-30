@@ -49,21 +49,28 @@ then
     #         ${printprom}
     #     done
     # done
-    
-    beta_set="1 2 3 4" 
-    mu_set="1 2 3 4 5 6 7 8 9 10" 
-    for beta in ${beta_set}
+    # beta_set="1 2 3 4" 
+    # mu_set="1 2 3 4 5 6 7 8 9 10" 
+    # for beta in ${beta_set}
+    # do
+    #   for mu in ${mu_set}
+    #   do
+    #     printprom="python main_translation.py --batch_size 4 --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation --norm True"
+    #     echo ${printprom}
+    #     ${printprom}
+    #   done
+    # done
+    alpha_set="1 1.5 2 2.5 3 3.5 4" 
+    omega_set="0.5 1 1.5 2" 
+    for alpha in ${alpha_set}
     do
-      for mu in ${mu_set}
+      for omega in ${omega_set}
       do
-        printprom="python main_translation.py --batch_size 4 --model mnist_mnist --beta ${beta} --mu ${mu} --batch_size 6 --gpu ${gpu} --prefix translation --norm True"
+        printprom="python main_acgan_translation.py --model mnist_svhn --gpu ${gpu} --alpha ${alpha} --omega ${omega} --batch_size 256"
         echo ${printprom}
         ${printprom}
       done
     done
-    python main_acgan_translation.py --batch_size 512 --model mnist_mnist --gpu ${gpu}
-    python main_acgan_translation.py --batch_size 256 --model svhn_svhn --gpu ${gpu}
-    
 elif [ ${gpu} = 2 ]
 then
     # model_set="usps_usps"
@@ -78,17 +85,27 @@ then
     #         ${printprom}
     #     done
     # done
-    beta_set="1 2 3 4" 
-    mu_set="1 2 3 4 5 6 7 8 9 10" 
-    for beta in ${beta_set}
+    # beta_set="1 2 3 4" 
+    # mu_set="1 2 3 4 5 6 7 8 9 10" 
+    # for beta in ${beta_set}
+    # do
+    #   for mu in ${mu_set}
+    #   do
+    #     printprom="python main_translation.py --batch_size 4 --model svhn_svhn --beta ${beta} --mu ${mu} --batch_size 4 --gpu ${gpu} --prefix translation --norm True"
+    #     echo ${printprom}
+    #     ${printprom}
+    #   done
+    # done
+    alpha_set="1 1.5 2 2.5 3 3.5 4" 
+    omega_set="0.5 1 1.5 2" 
+    for alpha in ${alpha_set}
     do
-      for mu in ${mu_set}
+      for omega in ${omega_set}
       do
-        printprom="python main_translation.py --batch_size 4 --model svhn_svhn --beta ${beta} --mu ${mu} --batch_size 4 --gpu ${gpu} --prefix translation --norm True"
+        printprom="python main_acgan_translation.py --model svhn_mnist --gpu ${gpu} --alpha ${alpha} --omega ${omega} --batch_size 256"
         echo ${printprom}
         ${printprom}
       done
     done
-    python main_acgan_translation.py --batch_size 256 --model mnist_svhn --gpu ${gpu}
 fi
 

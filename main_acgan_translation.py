@@ -41,11 +41,17 @@ parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--model', type=str, default='mnist_mnist')
 parser.add_argument('--weight_decay', type=float, default=1e-5)
 parser.add_argument('--display', type=int, default=10)
+parser.add_argument('--alpha', type=float, default=0.5)
+parser.add_argument('--beta', type=float, default=0.5)
+parser.add_argument('--gamma', type=float, default=0.5)
+parser.add_argument('--omega', type=float, default=0.5)
+parser.add_argument('--mu', type=float, default=0.5)
 opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}'.format(opt.prefix, opt.model)
+modelname = '{0}_{1}_{2:0.1f}_{3:0.1f}_{4:0.1f}_{5:0.1f}_{6:0.1f}'.format(
+    opt.prefix, opt.model, opt.alpha, opt.beta, opt.gamma, opt.omega, opt.mu)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -300,6 +306,7 @@ from torchvision.utils import make_grid
 print('')
 niter = 0
 epoch = 0
+best_test = 0
 while True:
     niter += 1
     src_x, src_y = next(src_train_iter)
@@ -322,38 +329,39 @@ while True:
     # -----------------
     #  Train Generator
     # -----------------
-
     opt_gen_st.zero_grad()
 
     # Loss measures generator's ability to fool the discriminator
     fake_pred, fake_aux = discriminator(fake_tgt_x)
-    g_loss = 0.5 * (adversarial_loss(fake_pred, valid) + auxiliary_loss(fake_aux, src_y))
+    g_loss = opt.alpha * (adversarial_loss(fake_pred, valid) + auxiliary_loss(fake_aux, src_y))
 
     g_loss.backward()
     opt_gen_st.step()
+    # discriminator.adv_layer[0].weight.grad created
+    # discriminator.aux_layer[0].weight.grad created
 
     # ---------------------
     #  Train Discriminator
     # ---------------------
-    # pdb.set_trace()
-    optimizer_D.zero_grad()
+    optimizer_D.zero_grad()     # discriminator.adv_layer[0].weight.grad, aux_layer --> 0
+
 
     # Loss for real images
     # real_pred, real_aux = discriminator(src_x)
     # d_real_loss = (adversarial_loss(real_pred, valid) + auxiliary_loss(real_aux, src_y)) / 2
 
     real_pred, real_aux = discriminator(src_x)
-    d_real_loss = 0.5 * (auxiliary_loss(real_aux, src_y)) 
+    d_real_loss = opt.beta * (auxiliary_loss(real_aux, src_y)) 
 
     tgt_pred, tgt_aux = discriminator(tgt_x)
-    d_real_loss += 0.5 * (adversarial_loss(tgt_pred, valid)) 
+    d_real_loss += opt.gamma * (adversarial_loss(tgt_pred, valid)) 
 
     # Loss for fake images
     fake_pred, fake_aux = discriminator(fake_tgt_x.detach())
-    d_fake_loss = 0.5 * (adversarial_loss(fake_pred, fake) + auxiliary_loss(fake_aux, src_y)) 
+    d_fake_loss = opt.omega * (adversarial_loss(fake_pred, fake) + auxiliary_loss(fake_aux, src_y)) 
 
     # Total discriminator loss
-    d_loss = 0.5 * (d_real_loss + d_fake_loss) 
+    d_loss = opt.mu * (d_real_loss + d_fake_loss) 
 
     # Calculate discriminator accuracy
     # pred = np.concatenate([real_aux.data.cpu().numpy(), fake_aux.data.cpu().numpy()], axis=0)
@@ -393,6 +401,8 @@ while True:
                 avgaccuracy1 += testaccuracy1
 
             avgaccuracy1 = (avgaccuracy1/n) *100
+            if best_test < avgaccuracy1:
+                best_test = avgaccuracy1
             writer.add_scalar('{0}/d_acc_test'.format(opt.prefix), avgaccuracy1, niter)
                 
 
@@ -410,6 +420,7 @@ while True:
     if epoch >= opt.n_epochs:
         print('')
         print('train complete')
-        os.rename(run_dir, run_dir[:-8])
+        run_dir_complete = '{0}_{1}'.format(run_dir[:-8], best_test)
+        os.rename(run_dir, run_dir_complete)
         break
 
