@@ -42,7 +42,6 @@ parser.add_argument('--model', type=str, default='mnist_mnist')
 parser.add_argument('--weight_decay', type=float, default=1e-5)
 parser.add_argument('--display', type=int, default=10)
 opt = parser.parse_args()
-print(opt)
 
 now = datetime.now()
 curtime = now.isoformat() 
@@ -50,10 +49,20 @@ modelname = '{0}_{1}'.format(opt.prefix, opt.model)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
-cuda = True if torch.cuda.is_available() else False
-if torch.cuda.is_available():
-    torch.cuda.set_device(opt.gpu)
 
+prompt = ''
+prompt += ('====================================\n')
+prompt += run_dir + '\n'
+for arg in vars(opt):
+    prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+prompt += ('====================================\n')
+print(prompt, end='')
+
+cuda = False
+if torch.cuda.is_available():
+    cuda = True
+    torch.cuda.set_device(opt.gpu)
+    device = torch.device('cuda:{0}'.format(opt.gpu))
 # Configure data loader
 
 import utils
@@ -119,6 +128,45 @@ def weights_init_normal(m):
     elif classname.find("BatchNorm2d") != -1:
         torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
         torch.nn.init.constant_(m.bias.data, 0.0)
+
+class GANLoss(torch.nn.Module):
+    def __init__(self, device, use_lsgan=True):
+        super(GANLoss, self).__init__()
+        self.device = device
+        self.real_label = None
+        self.fake_label = None
+        if use_lsgan:
+            self.loss = torch.nn.MSELoss()
+        else:
+            self.loss = torch.nn.BCELoss()
+
+    def get_target_tensor(self, input, target_is_real):
+        target_tensor = None
+        if target_is_real:
+            create_label = ((self.real_label is None) or
+                            (self.real_label.numel() != input.numel()))
+            if create_label:
+                # self.real_label_tensor = self.Tensor(
+                #     input.size(), requires_grad=False).fill_(self.real_label)
+                # self.real_label = torch.FloatTensor()
+                # self.real_label.fill_(self.real_label)
+                self.real_label = torch.ones(
+                    input.size(), requires_grad=False, device=self.device)
+            target_tensor = self.real_label
+        else:
+            create_label = ((self.fake_label is None) or
+                            (self.fake_label.numel() != input.numel()))
+            if create_label:
+                # self.fake_label_tensor = self.Tensor(
+                #     input.size(), requires_grad=False).fill_(self.fake_label)
+                self.fake_label = torch.zeros(
+                    input.size(), requires_grad=False, device=self.device)
+            target_tensor = self.fake_label
+        return target_tensor
+
+    def __call__(self, input, target_is_real):
+        target_tensor = self.get_target_tensor(input, target_is_real)
+        return self.loss(input, target_tensor)
 
 class GenResBlock(nn.Module):
     def __init__(self, n_out_ch):
@@ -203,7 +251,7 @@ auxiliary_loss = torch.nn.CrossEntropyLoss()
 
 loss_CE = torch.nn.CrossEntropyLoss().cuda()
 loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
-# loss_LS = GANLoss(device, use_lsgan=True)
+loss_LS = GANLoss(device, use_lsgan=True)
 
 
 
@@ -278,8 +326,8 @@ while True:
     opt_gen_st.zero_grad()
 
     # Loss measures generator's ability to fool the discriminator
-    validity, pred_label = discriminator(fake_tgt_x)
-    g_loss = 0.5 * (adversarial_loss(validity, valid) + auxiliary_loss(pred_label, src_y))
+    fake_pred, fake_aux = discriminator(fake_tgt_x)
+    g_loss = 0.5 * (adversarial_loss(fake_pred, valid) + auxiliary_loss(fake_aux, src_y))
 
     g_loss.backward()
     opt_gen_st.step()
