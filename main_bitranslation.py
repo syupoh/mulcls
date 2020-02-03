@@ -25,10 +25,11 @@ import Networks2 as net
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--start_epoch', type=int, default='3')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=1024, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
@@ -220,7 +221,9 @@ while True:
     softmax_output = (1-opt.cla_plus_weight)*softmax_output+ opt.cla_plus_weight*softmax_output1
 
     
-    loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
+
+    if epoch > opt.start_epoch:
+        loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
     
 
     # if epoch > start_epoch:
@@ -242,11 +245,11 @@ while True:
     optimizer_G.zero_grad()
     
     # Identity loss
-    same_t = gen_st(f_t)
-    loss_identity_t = criterion_identity(same_t, f_t)
+    same_t = gen_st(f_s)
+    loss_identity_t = criterion_identity(same_t, f_s)
 
-    same_s = gen_ts(f_s)
-    loss_identity_s = criterion_identity(same_s, f_s)
+    same_s = gen_ts(f_t)
+    loss_identity_s = criterion_identity(same_s, f_t)
 
     # Gan loss
     f_st = gen_st(f_s)
@@ -256,18 +259,14 @@ while True:
     f_ts = gen_ts(f_t)
     pred_f_ts = D_s(f_ts)
     loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
-    loss_G_t2s = 0
 
     ##### cycle loss
     f_sts = gen_ts(f_st)
-    # loss_cycle_sts = criterion_cycle(f_sts, f_s)
-    loss_cycle_sts = criterion_percep(f_sts, f_s)
-    # pdb.set_trace()
-
+    loss_cycle_sts = criterion_cycle(f_sts, f_s)   
+    
     f_tst = gen_st(f_ts)
-    # loss_cycle_tst = criterion_cycle(f_tst, f_t)
-    loss_cycle_tst = criterion_percep(f_tst, f_t)
- 
+    loss_cycle_tst = criterion_cycle(f_tst, f_t)
+    
     # loss_cycle_tst = criterion_percep(vgg_model(f_t), vgg_model(f_tst))
     
 
@@ -338,7 +337,9 @@ while True:
     loss_D_t = loss_D_real + loss_D_fake
     loss_D_t.backward()
     optimizer_D_t.step()
-    optimizer_ad.step()
+    
+    if epoch > opt.start_epoch:
+        optimizer_ad.step()
 
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s)).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
     

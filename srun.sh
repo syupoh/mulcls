@@ -97,7 +97,7 @@ then
     #   done
     # done
     weight_in_loss_g_set="1,0.01,0.1,0.1" 
-    cyc_loss_weight_set="0.05 0.1 0.5" 
+    cyc_loss_weight_set="0.01 0.05 0.1 0.5" 
     for weight_in_loss_g in ${weight_in_loss_g_set}
     do
       for cyc_loss_weight in ${cyc_loss_weight_set}
