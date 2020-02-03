@@ -21,32 +21,25 @@ from util.sampler import InfiniteSampler
 from utils import ReplayBuffer
 import Networks2 as net
 
+
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=512, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=1024, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
-parser.add_argument("--n_classes", type=int, default=10, help="number of classes for dataset")
-parser.add_argument("--img_size", type=int, default=32, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=10, help="interval between image sampling")
 parser.add_argument("--gpu", type=int, default=3)
-parser.add_argument('--norm', type=bool, default=True)
-parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--model', type=str, default='mnist_svhn')
-parser.add_argument('--weight_decay', type=float, default=1e-5)
-parser.add_argument('--display', type=int, default=10)
+parser.add_argument('--weight_decay', type=float, default=5e-4)
 parser.add_argument('--cla_plus_weight', type=float, default=3e-1)
 parser.add_argument('--cyc_loss_weight',type=float,default=0.01)
 parser.add_argument('--weight_in_loss_g',type=str,default='1,0.01,0.1,0.1')
 parser.add_argument('--log_interval', type=int, default=50, help='how many batches to wait before logging training status')
 parser.add_argument('--random', type=bool, default=False, help='whether to use random')
+parser.add_argument('--norm', type=bool, default=True)
 opt = parser.parse_args()
 
 now = datetime.now()
@@ -84,20 +77,6 @@ iter_per_epoch = n_sample // opt.batch_size + 1
 src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
-if opt.norm == True:
-    X_min = -1 # 0.5 mormalize 는 0~1
-    X_max = 1
-else:
-    X_min = trainset.data.min()
-    X_max = trainset.data.max()
-
-# for X, Y in train_loader: 
-#     res_x = X.shape[-1]
-#     break
-
-# for X, Y in train_loader2: 
-#     res_y = X.shape[-1]
-#     break
 
 modelsplit = opt.model.split('_')
 if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
@@ -150,15 +129,6 @@ def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
         return nn.BCELoss()(ad_out, dc_target) 
 
 
-def weights_init_normal(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
-
-
 # Loss functions
 adversarial_loss = torch.nn.BCELoss()
 
@@ -196,17 +166,21 @@ criterion_GAN = torch.nn.MSELoss()
 criterion_cycle = torch.nn.L1Loss()
 criterion_identity = torch.nn.L1Loss()
 criterion_Sem = torch.nn.L1Loss()
+criterion_percep = torch.nn.MSELoss()
+
+vgg_model = net.VGG16()
+if torch.cuda.is_available():
+    vgg_model.cuda()
+
+vgg_model.eval()
 
 optimizer_G = torch.optim.Adam(chain(gen_st.parameters(), gen_ts.parameters()), lr=0.0003)
 optimizer_D_s = torch.optim.Adam(D_s.parameters(), lr=0.0003)
 optimizer_D_t = torch.optim.Adam(D_t.parameters(), lr=0.0003)
-optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=0.0005, momentum=0.9)
-optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=0.0005, momentum=0.9)
+optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
+optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
 
 ### Initialize weights
-# gen_st.apply(weights_init_normal)
-# gen_ts.apply(weights_init_normal)
-# discriminator.apply(weights_init_normal)
 
 FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
@@ -245,9 +219,8 @@ while True:
     softmax_output1 = nn.Softmax(dim=1)(output1)
     softmax_output = (1-opt.cla_plus_weight)*softmax_output+ opt.cla_plus_weight*softmax_output1
 
-    loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
     
-    d_acc_src = np.mean(np.argmax(real_aux.data.cpu().numpy(), axis=1) == src_y.data.cpu().numpy())
+    loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
     
 
     # if epoch > start_epoch:
@@ -281,16 +254,22 @@ while True:
     loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
 
     f_ts = gen_ts(f_t)
-    # pred_f_ts = D_s(f_ts)
-    # loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
+    pred_f_ts = D_s(f_ts)
+    loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
     loss_G_t2s = 0
 
-    # cycle loss
+    ##### cycle loss
     f_sts = gen_ts(f_st)
-    loss_cycle_sts = criterion_cycle(f_sts, f_s)
+    # loss_cycle_sts = criterion_cycle(f_sts, f_s)
+    loss_cycle_sts = criterion_percep(f_sts, f_s)
+    # pdb.set_trace()
 
     f_tst = gen_st(f_ts)
-    loss_cycle_tst = criterion_cycle(f_tst, f_t)
+    # loss_cycle_tst = criterion_cycle(f_tst, f_t)
+    loss_cycle_tst = criterion_percep(f_tst, f_t)
+ 
+    # loss_cycle_tst = criterion_percep(vgg_model(f_t), vgg_model(f_tst))
+    
 
     # sem loss
     pred_f_sts = model.classifier(f_sts)
@@ -361,12 +340,15 @@ while True:
     optimizer_D_t.step()
     optimizer_ad.step()
 
-    print('Train Epoch: {0} [{1}/{2} ({3:.0f}%)]\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
+    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s)).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
+    
+    print('Train Epoch: {0} [{1}/{2} ({3:.0f}%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
         epoch, niter%iter_per_epoch, iter_per_epoch,
-        100. * niter / n_sample, loss.item(), total_loss.item()), end='\r')
+        100. * niter / n_sample, loss.item(), total_loss.item(), acc_src.item()), end='\r')
 
     writer.add_scalar('{0}/Loss'.format(opt.prefix), loss.item(), niter)
     writer.add_scalar('{0}/Loss+G'.format(opt.prefix), total_loss.item(), niter)
+    writer.add_scalar('{0}/src_accuracy'.format(opt.prefix), acc_src.item(), niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 

@@ -96,13 +96,13 @@ then
     #     ${printprom}
     #   done
     # done
-    alpha_set="1 1.5 2 2.5 3 3.5 4" 
-    omega_set="0.5 1 1.5 2" 
-    for alpha in ${alpha_set}
+    weight_in_loss_g_set="1,0.01,0.1,0.1" 
+    cyc_loss_weight_set="0.05 0.1 0.5" 
+    for weight_in_loss_g in ${weight_in_loss_g_set}
     do
-      for omega in ${omega_set}
+      for cyc_loss_weight in ${cyc_loss_weight_set}
       do
-        printprom="python main_acgan_translation.py --model svhn_mnist --gpu ${gpu} --alpha ${alpha} --omega ${omega} --batch_size 256"
+        printprom="python main_bitranslation.py --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --batch_size 1024"
         echo ${printprom}
         ${printprom}
       done

@@ -1,6 +1,7 @@
 from Basic_blocks import * 
 import numpy as np
 import warnings
+from torchvision import models
 
 def calc_coeff(iter_num, high=1.0, low=0.0, alpha=10.0, max_iter=10000.0):
     return np.float(2.0 * (high - low) / (1.0 + np.exp(-alpha*iter_num / max_iter)) - (high - low) + low)
@@ -213,3 +214,47 @@ class RandomLayer(nn.Module):
     def cuda(self):
         super(RandomLayer, self).cuda()
         self.random_matrix = [val.cuda() for val in self.random_matrix]
+
+        
+"""Modified VGG16 to compute perceptual loss.
+This class is mostly copied from pytorch/examples.
+See, fast_neural_style in https://github.com/pytorch/examples.
+"""
+
+
+class VGG_OUTPUT(object):
+
+    def __init__(self, relu1_2, relu2_2, relu3_3, relu4_3):
+        self.__dict__ = locals()
+
+
+class VGG16(nn.Module):
+    def __init__(self, requires_grad=False):
+        super(VGG16, self).__init__()
+        vgg_pretrained_features = models.vgg16(pretrained=True).features
+        self.slice1 = torch.nn.Sequential()
+        self.slice2 = torch.nn.Sequential()
+        self.slice3 = torch.nn.Sequential()
+        self.slice4 = torch.nn.Sequential()
+        for x in range(4):
+            self.slice1.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(4, 9):
+            self.slice2.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(9, 16):
+            self.slice3.add_module(str(x), vgg_pretrained_features[x])
+        for x in range(16, 23):
+            self.slice4.add_module(str(x), vgg_pretrained_features[x])
+        if not requires_grad:
+            for param in self.parameters():
+                param.requires_grad = False
+
+    def forward(self, X):
+        h = self.slice1(X)
+        h_relu1_2 = h
+        h = self.slice2(h)
+        h_relu2_2 = h
+        h = self.slice3(h)
+        h_relu3_3 = h
+        h = self.slice4(h)
+        h_relu4_3 = h
+        return VGG_OUTPUT(h_relu1_2, h_relu2_2, h_relu3_3, h_relu4_3)
