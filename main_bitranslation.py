@@ -295,12 +295,10 @@ while True:
     classifier_loss1.backward()
     classifier1_optim.step()
 
-
     total_loss = loss + opt.cyc_loss_weight * loss_G
     total_loss.backward()
     optimizer.step()
     optimizer_G.step()
-
 
     ###### Discriminator S ######
     optimizer_D_s.zero_grad()
@@ -327,7 +325,7 @@ while True:
     # Real loss
     pred_real = D_t(f_t.detach())
     loss_D_real = criterion_GAN(pred_real, real_label)
-
+    
     # Fake loss
     f_st = f_st_buffer.push_and_pop(f_st)
     pred_f_st = D_t(f_st.detach())
@@ -341,11 +339,11 @@ while True:
     if epoch > opt.start_epoch:
         optimizer_ad.step()
 
-    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s)).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
+    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
     
-    print('Train Epoch: {0} [{1}/{2} ({3:.0f}%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
+    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
         epoch, niter%iter_per_epoch, iter_per_epoch,
-        100. * niter / n_sample, loss.item(), total_loss.item(), acc_src.item()), end='\r')
+        100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item()), end='\r')
 
     writer.add_scalar('{0}/Loss'.format(opt.prefix), loss.item(), niter)
     writer.add_scalar('{0}/Loss+G'.format(opt.prefix), total_loss.item(), niter)
