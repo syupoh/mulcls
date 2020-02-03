@@ -304,8 +304,7 @@ def main(opt):
                     nagree = nagree + (agreement).int().sum()
 
 
-                avgaccuracy1 
-                = (avgaccuracy1/n) *100
+                avgaccuracy1 = (avgaccuracy1/n) *100
                 avgaccuracy2 = (avgaccuracy2/n) *100
                 avgaccuracy3 = (avgaccuracy3/n) *100
                 avgaccuracy4 = (avgaccuracy4/n) *100

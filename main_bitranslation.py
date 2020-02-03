@@ -51,7 +51,7 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}_{2:0.1f}_{3}_{4:0.2f}'.format(
+modelname = '{0}_{1}_{2}_{3:0.2f}'.format(
     opt.prefix, opt.model, opt.weight_in_loss_g, opt.cyc_loss_weight)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
@@ -136,7 +136,7 @@ def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
     dc_target = torch.from_numpy(np.array([[1]] * batch_size + [[0]] * batch_size)).float().cuda()
     if entropy is not None:
         entropy.register_hook(grl_hook(coeff))
-        entropy = 1.0+torch.exp(-entropy)
+        entropy = 1.0+torch.exp(-1*entropy)
         source_mask = torch.ones_like(entropy)
         source_mask[feature.size(0)//2:] = 0
         source_weight = entropy*source_mask
@@ -188,8 +188,8 @@ classifier1 = net.Classifier(512, class_num)
 classifier1 = classifier1.cuda()
 classifier1_optim = torch.optim.Adam(classifier1.parameters(), lr=0.0003)
 
-fake_S_buffer = ReplayBuffer()
-fake_T_buffer = ReplayBuffer()
+f_ts_buffer = ReplayBuffer()
+f_st_buffer = ReplayBuffer()
 
 ### Loss & Optimizers
 criterion_GAN = torch.nn.MSELoss()
@@ -200,10 +200,9 @@ criterion_Sem = torch.nn.L1Loss()
 optimizer_G = torch.optim.Adam(chain(gen_st.parameters(), gen_ts.parameters()), lr=0.0003)
 optimizer_D_s = torch.optim.Adam(D_s.parameters(), lr=0.0003)
 optimizer_D_t = torch.optim.Adam(D_t.parameters(), lr=0.0003)
-
-
 optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=0.0005, momentum=0.9)
 optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=0.0005, momentum=0.9)
+
 ### Initialize weights
 # gen_st.apply(weights_init_normal)
 # gen_ts.apply(weights_init_normal)
@@ -247,6 +246,9 @@ while True:
     softmax_output = (1-opt.cla_plus_weight)*softmax_output+ opt.cla_plus_weight*softmax_output1
 
     loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
+    
+    d_acc_src = np.mean(np.argmax(real_aux.data.cpu().numpy(), axis=1) == src_y.data.cpu().numpy())
+    
 
     # if epoch > start_epoch:
     #     if method == 'CDAN-E':
@@ -274,29 +276,30 @@ while True:
     loss_identity_s = criterion_identity(same_s, f_s)
 
     # Gan loss
-    fake_t = gen_st(f_s)
-    pred_fake = D_t(fake_t)
-    loss_G_s2t = criterion_GAN(pred_fake, y_s.float())
+    f_st = gen_st(f_s)
+    pred_f_st = D_t(f_st)
+    loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
 
-    fake_s = gen_ts(f_t)
-    pred_fake = D_s(fake_s)
-    loss_G_t2s = criterion_GAN(pred_fake, y_s.float())
+    f_ts = gen_ts(f_t)
+    # pred_f_ts = D_s(f_ts)
+    # loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
+    loss_G_t2s = 0
 
     # cycle loss
-    recovered_s = gen_ts(fake_t)
-    loss_cycle_sts = criterion_cycle(recovered_s, f_s)
+    f_sts = gen_ts(f_st)
+    loss_cycle_sts = criterion_cycle(f_sts, f_s)
 
-    recovered_t = gen_st(fake_s)
-    loss_cycle_tst = criterion_cycle(recovered_t, f_t)
+    f_tst = gen_st(f_ts)
+    loss_cycle_tst = criterion_cycle(f_tst, f_t)
 
     # sem loss
-    pred_recovered_s = model.classifier(recovered_s)
-    pred_fake_t = model.classifier(fake_t)
-    loss_sem_t2s = criterion_Sem(pred_recovered_s, pred_fake_t)
+    pred_f_sts = model.classifier(f_sts)
+    pred_f_st = model.classifier(f_st)
+    loss_sem_t2s = criterion_Sem(pred_f_sts, pred_f_st)
 
-    pred_recovered_t = model.classifier(recovered_t)
-    pred_fake_s = model.classifier(fake_s)
-    loss_sem_s2t = criterion_Sem(pred_recovered_t, pred_fake_s)
+    pred_f_tst = model.classifier(f_tst)
+    pred_f_ts = model.classifier(f_ts)
+    loss_sem_s2t = criterion_Sem(pred_f_tst, pred_f_ts)
 
     loss_cycle = loss_cycle_tst + loss_cycle_sts
     weight_in_loss_g = opt.weight_in_loss_g.split(',')
@@ -306,7 +309,7 @@ while True:
                 float(weight_in_loss_g[3]) * (loss_sem_s2t + loss_sem_t2s)
     
     # softmax
-    outputs_fake = classifier1(fake_t.detach())
+    outputs_fake = classifier1(f_st.detach())
 
     # classifier
     classifier_loss1 = nn.CrossEntropyLoss()(outputs_fake, y_s)
@@ -329,9 +332,9 @@ while True:
     loss_D_real = criterion_GAN(pred_real, real_label)
 
     # Fake loss
-    fake_s = fake_S_buffer.push_and_pop(fake_s)
-    pred_fake = D_s(fake_s.detach())
-    loss_D_fake = criterion_GAN(pred_fake, fake_label)
+    f_ts = f_ts_buffer.push_and_pop(f_ts)
+    pred_f_ts = D_s(f_ts.detach())
+    loss_D_fake = criterion_GAN(pred_f_ts, fake_label)
 
     # Total loss
     loss_D_s = loss_D_real + loss_D_fake
@@ -348,16 +351,16 @@ while True:
     loss_D_real = criterion_GAN(pred_real, real_label)
 
     # Fake loss
-    fake_t = fake_T_buffer.push_and_pop(fake_t)
-    pred_fake = D_t(fake_t.detach())
-    loss_D_fake = criterion_GAN(pred_fake, fake_label)
+    f_st = f_st_buffer.push_and_pop(f_st)
+    pred_f_st = D_t(f_st.detach())
+    loss_D_fake = criterion_GAN(pred_f_st, fake_label)
 
     # Total loss
     loss_D_t = loss_D_real + loss_D_fake
     loss_D_t.backward()
     optimizer_D_t.step()
-
     optimizer_ad.step()
+
     print('Train Epoch: {0} [{1}/{2} ({3:.0f}%)]\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
         epoch, niter%iter_per_epoch, iter_per_epoch,
         100. * niter / n_sample, loss.item(), total_loss.item()), end='\r')
