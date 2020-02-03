@@ -420,7 +420,7 @@ while True:
     if epoch >= opt.n_epochs:
         print('')
         print('train complete')
-        run_dir_complete = '{0}_{1}'.format(run_dir[:-8], best_test)
+        run_dir_complete = '{0}_{1:0.2f}'.format(run_dir[:-8], best_test)
         os.rename(run_dir, run_dir_complete)
         break
 

@@ -49,7 +49,7 @@ class conv9(nn.Module):
         return self.h2
 
 class conv3(nn.Module):
-    def __init__(self,in_dim=28*28, out_dim=10, p=0.5):
+    def __init__(self, in_dim=28*28, out_dim=10, p=0.5):
         super(conv3,self).__init__()
         act_fn = torch.nn.ReLU() 
         # self.conv_set3 = conv_set3(act_fn)
