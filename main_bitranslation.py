@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='3')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
@@ -130,13 +130,6 @@ def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
         return nn.BCELoss()(ad_out, dc_target) 
 
 
-# Loss functions
-adversarial_loss = torch.nn.BCELoss()
-
-loss_CE = torch.nn.CrossEntropyLoss().cuda()
-# loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
-# loss_LS = GANLoss(device, use_lsgan=True)
-
 ### Model
 input_size = 512
 num_feature = 1024
@@ -163,6 +156,12 @@ f_ts_buffer = ReplayBuffer()
 f_st_buffer = ReplayBuffer()
 
 ### Loss & Optimizers
+# Loss functions
+adversarial_loss = torch.nn.BCELoss()
+loss_CE = torch.nn.CrossEntropyLoss().cuda()
+# loss_KLD = torch.nn.KLDivLoss(reduction='batchmean').cuda()
+# loss_LS = GANLoss(device, use_lsgan=True)
+criterion_CE = torch.nn.CrossEntropyLoss().cuda()
 criterion_GAN = torch.nn.MSELoss()
 criterion_cycle = torch.nn.L1Loss()
 criterion_identity = torch.nn.L1Loss()
@@ -253,11 +252,11 @@ while True:
 
     # Gan loss
     f_st = gen_st(f_s)
-    pred_f_st = D_t(f_st)
+    pred_f_st, aux_f_st = D_t(f_st)
     loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
 
     f_ts = gen_ts(f_t)
-    pred_f_ts = D_s(f_ts)
+    pred_f_ts, aux_f_ts = D_s(f_ts)
     loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
 
     ##### cycle loss
@@ -304,16 +303,18 @@ while True:
     optimizer_D_s.zero_grad()
 
     # Real loss
-    pred_real = D_s(f_s.detach())
-    loss_D_real = criterion_GAN(pred_real, real_label)
+    pred_f_s, aux_f_s = D_s(f_s.detach())
+    loss_D_real = criterion_GAN(pred_f_s, real_label)
 
+    loss_D_aux = criterion_CE(aux_f_s, y_s)
+ 
     # Fake loss
     f_ts = f_ts_buffer.push_and_pop(f_ts)
-    pred_f_ts = D_s(f_ts.detach())
+    pred_f_ts, aux_f_ts = D_s(f_ts.detach())
     loss_D_fake = criterion_GAN(pred_f_ts, fake_label)
 
     # Total loss
-    loss_D_s = loss_D_real + loss_D_fake
+    loss_D_s = loss_D_real + loss_D_fake + loss_D_aux
     loss_D_s.backward()
 
     optimizer_D_s.step()
@@ -323,16 +324,18 @@ while True:
     optimizer_D_t.zero_grad()
 
     # Real loss
-    pred_real = D_t(f_t.detach())
-    loss_D_real = criterion_GAN(pred_real, real_label)
+    pred_f_t, aux_f_t = D_t(f_t.detach())
+    loss_D_real = criterion_GAN(pred_f_t, real_label)
     
     # Fake loss
     f_st = f_st_buffer.push_and_pop(f_st)
-    pred_f_st = D_t(f_st.detach())
+    pred_f_st, aux_f_st = D_t(f_st.detach())
     loss_D_fake = criterion_GAN(pred_f_st, fake_label)
 
+    loss_D_aux = criterion_CE(aux_f_st, y_s)
+
     # Total loss
-    loss_D_t = loss_D_real + loss_D_fake
+    loss_D_t = loss_D_real + loss_D_fake + loss_D_aux
     loss_D_t.backward()
     optimizer_D_t.step()
     
@@ -341,13 +344,13 @@ while True:
 
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
     
-    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
+    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
         epoch, niter%iter_per_epoch, iter_per_epoch,
         100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item()), end='\r')
 
-    writer.add_scalar('{0}/Loss'.format(opt.prefix), loss.item(), niter)
-    writer.add_scalar('{0}/Loss+G'.format(opt.prefix), total_loss.item(), niter)
-    writer.add_scalar('{0}/src_accuracy'.format(opt.prefix), acc_src.item(), niter)
+    writer.add_scalar('bitranslation/Loss', loss.item(), niter)
+    writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
+    writer.add_scalar('bitranslation/src_accuracy', acc_src.item(), niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
@@ -373,8 +376,8 @@ while True:
             if best_test < test_accuracy:
                 best_test = test_accuracy
 
-            writer.add_scalar('{0}/test_loss'.format(opt.prefix), test_loss, niter)
-            writer.add_scalar('{0}/test_accuracy'.format(opt.prefix), test_accuracy, niter)
+            writer.add_scalar('bitranslation/test_loss', test_loss, niter)
+            writer.add_scalar('bitranslation/test_accuracy', test_accuracy, niter)
                 
 
 

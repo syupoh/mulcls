@@ -144,6 +144,12 @@ class Discriminator_digits(nn.Module):
             nn.Linear(1024, 1),
             nn.Sigmoid()
         )
+        self.fc2 = nn.Sequential(
+            nn.Linear(64 * 8 * 8, 1024),
+            nn.LeakyReLU(0.2, True),
+            nn.Linear(1024, 10),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
         '''
@@ -153,8 +159,9 @@ class Discriminator_digits(nn.Module):
         x = self.conv1(x)
         x = self.conv2(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        return x
+        x_ = self.fc(x)
+        x = self.fc2(x)
+        return x_, x
 
 
 class AdversarialNetwork(nn.Module):
