@@ -30,7 +30,7 @@ parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
+parser.add_argument("--lr", type=float, default=2e-4, help="adam: learning rate")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
 parser.add_argument('--model', type=str, default='mnist_svhn')
@@ -45,8 +45,8 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}_{2}_{3:0.2f}'.format(
-    opt.prefix, opt.model, opt.weight_in_loss_g, opt.cyc_loss_weight)
+modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}'.format(
+    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -61,6 +61,8 @@ print(prompt, end='')
 
 cuda = False
 if torch.cuda.is_available():
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]="{0}".format(opt.gpu)
     cuda = True
     torch.cuda.set_device(opt.gpu)
     device = torch.device('cuda:{0}'.format(opt.gpu))
@@ -78,6 +80,11 @@ iter_per_epoch = n_sample // opt.batch_size + 1
 src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
+if opt.prefix.split('_') is not None:
+    MODELTYPE = opt.prefix.split('_')
+    MODELTYPE = MODELTYPE[1]
+else:
+    MODELTYPE = None
 
 modelsplit = opt.model.split('_')
 if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
@@ -219,7 +226,6 @@ while True:
     softmax_output1 = nn.Softmax(dim=1)(output1)
     softmax_output = (1-opt.cla_plus_weight)*softmax_output+ opt.cla_plus_weight*softmax_output1
 
-    
 
     if epoch > opt.start_epoch:
         loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
@@ -236,6 +242,7 @@ while True:
     #     else:
     #         raise ValueError('Method cannot be recognized.')
 
+    ### error must be occured
     num_feature = features.size(0)
     # =================train discriminator T
     real_label = Variable(torch.ones(num_feature)).cuda()
@@ -244,20 +251,28 @@ while True:
     optimizer_G.zero_grad()
     
     # Identity loss
-    same_t = gen_st(f_s)
-    loss_identity_t = criterion_identity(same_t, f_s)
+    same_t = gen_st(f_t)
+    loss_identity_t = criterion_identity(same_t, f_t)
 
-    same_s = gen_ts(f_t)
-    loss_identity_s = criterion_identity(same_s, f_t)
+    same_s = gen_ts(f_s)
+    loss_identity_s = criterion_identity(same_s, f_s)
 
     # Gan loss
     f_st = gen_st(f_s)
     pred_f_st, aux_f_st = D_t(f_st)
-    loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
+    
+    if MODELTYPE == 'B' or MODELTYPE == 'E':
+        loss_G_s2t = criterion_GAN(pred_f_st, real_label)
+    else:
+        loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
 
     f_ts = gen_ts(f_t)
     pred_f_ts, aux_f_ts = D_s(f_ts)
-    loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
+    
+    if MODELTYPE == 'B' or MODELTYPE == 'E':
+        loss_G_t2s = criterion_GAN(pred_f_ts, real_label)
+    else:
+        loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
 
     ##### cycle loss
     f_sts = gen_ts(f_st)
@@ -299,6 +314,7 @@ while True:
     optimizer.step()
     optimizer_G.step()
 
+    loss_D_aux = 0
     ###### Discriminator S ######
     optimizer_D_s.zero_grad()
 
@@ -306,7 +322,10 @@ while True:
     pred_f_s, aux_f_s = D_s(f_s.detach())
     loss_D_real = criterion_GAN(pred_f_s, real_label)
 
-    loss_D_aux = criterion_CE(aux_f_s, y_s)
+    if MODELTYPE == 'D' or MODELTYPE == 'E':
+        pass
+    else:
+        loss_D_aux = criterion_CE(aux_f_s, y_s)
  
     # Fake loss
     f_ts = f_ts_buffer.push_and_pop(f_ts)
@@ -314,11 +333,15 @@ while True:
     loss_D_fake = criterion_GAN(pred_f_ts, fake_label)
 
     # Total loss
-    loss_D_s = loss_D_real + loss_D_fake + loss_D_aux
+    if MODELTYPE == 'D' or MODELTYPE == 'E':
+        loss_D_s = loss_D_real + loss_D_fake
+    else:
+        loss_D_s = loss_D_real + loss_D_fake + loss_D_aux
     loss_D_s.backward()
 
     optimizer_D_s.step()
     ###################################
+
 
     ###### Discriminator t ######
     optimizer_D_t.zero_grad()
@@ -332,10 +355,18 @@ while True:
     pred_f_st, aux_f_st = D_t(f_st.detach())
     loss_D_fake = criterion_GAN(pred_f_st, fake_label)
 
-    loss_D_aux = criterion_CE(aux_f_st, y_s)
-
+    if MODELTYPE == 'C':
+        loss_D_aux = criterion_CE(aux_f_st, y_s)
+    else:
+        pass
+    
     # Total loss
-    loss_D_t = loss_D_real + loss_D_fake + loss_D_aux
+    loss_D_t = loss_D_real + loss_D_fake 
+    if MODELTYPE == 'C':
+        loss_D_t = loss_D_real + loss_D_fake + loss_D_aux
+    else:
+        loss_D_t = loss_D_real + loss_D_fake 
+
     loss_D_t.backward()
     optimizer_D_t.step()
     
@@ -344,7 +375,7 @@ while True:
 
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
     
-    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)]\tAccuracy: {6:.2f}\tLoss: {4:.6f}\tLoss+G: {5:.6f}'.format(
+    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] Accuracy: {6:.2f} Loss: {4:.6f} Loss+G: {5:.6f}'.format(
         epoch, niter%iter_per_epoch, iter_per_epoch,
         100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item()), end='\r')
 
@@ -355,6 +386,10 @@ while True:
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
             epoch = niter // iter_per_epoch
+            
+            if epoch % 3 == 0:
+                for param_group in optimizer.param_groups:
+                    param_group["lr"] = param_group["lr"] * 0.3
 
             n = 0
             nagree = 0
@@ -375,6 +410,10 @@ while True:
 
             if best_test < test_accuracy:
                 best_test = test_accuracy
+
+            print('')
+            print('Test loss: {0}\t accuracy : {1}'.format(
+                test_loss, test_accuracy))
 
             writer.add_scalar('bitranslation/test_loss', test_loss, niter)
             writer.add_scalar('bitranslation/test_accuracy', test_accuracy, niter)

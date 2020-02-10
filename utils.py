@@ -30,7 +30,7 @@ def load_data(opt):
     tf_to32 = transforms.Compose([
         transforms.Resize((32,32)),
         transforms.ToTensor(),
-        # transforms.Normalize((0.5,), (0.5,)),
+        transforms.Normalize((0.5,), (0.5,)),
         transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
     ])
 
