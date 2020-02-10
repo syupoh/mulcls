@@ -262,7 +262,7 @@ while True:
     pred_f_st, aux_f_st = D_t(f_st)
     
     if MODELTYPE == 'B' or MODELTYPE == 'E':
-        loss_G_s2t = criterion_GAN(pred_f_st, real_label)
+        loss_G_s2t = criterion_GAN(pred_f_st, fake_label)
     else:
         loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
 
