@@ -38,6 +38,12 @@ python main_bitranslation.py --prefix bitranslation_C --model svhn_mnist --gpu $
 python main_bitranslation.py --prefix bitranslation_D --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
 python main_bitranslation.py --prefix bitranslation_E --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
 
+python main_bitranslation.py --prefix bitranslation_A --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
+python main_bitranslation.py --prefix bitranslation_B --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
+python main_bitranslation.py --prefix bitranslation_F --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
+python main_bitranslation.py --prefix bitranslation_G --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
+python main_bitranslation.py --prefix bitranslation_H --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}
+
 
 weight_in_loss_g_set="1,0.01,0.1,0.1" 
 cyc_loss_weight_set="0.05 0.001 0.005" 

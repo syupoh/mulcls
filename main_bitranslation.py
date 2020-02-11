@@ -25,7 +25,7 @@ import Networks2 as net
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--start_epoch', type=int, default='3')
+parser.add_argument('--start_epoch', type=int, default='50')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
@@ -41,6 +41,7 @@ parser.add_argument('--weight_in_loss_g',type=str,default='1,0.01,0.1,0.1')
 parser.add_argument('--log_interval', type=int, default=50, help='how many batches to wait before logging training status')
 parser.add_argument('--random', type=bool, default=False, help='whether to use random')
 parser.add_argument('--norm', type=bool, default=True)
+parser.add_argument('--modelload', type=str, default=None)
 opt = parser.parse_args()
 
 now = datetime.now()
@@ -50,6 +51,16 @@ modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}'.format(
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
+prompt = ('====================================\n')
+for arg in vars(opt):
+    prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+prompt = prompt+('====================================\n')
+
+print(prompt, end='')
+
+f = open('{0}/opt.txt'.format(run_dir), 'w')
+f.write(prompt)
+f.close()
 
 prompt = ''
 prompt += ('====================================\n')
@@ -201,6 +212,24 @@ print('')
 niter = 0
 epoch = 0
 best_test = 0
+
+if opt.modelload is not None:
+    checkpoint = torch.load(opt.modelload, map_location='cuda:{0}'.format(opt.gpu))
+    epoch = checkpoint['epoch']
+    best_test = checkpoint['best_test']
+    niter = checkpoint['niter']
+    gen_st.load_state_dict(checkpoint['gen_st'])
+    gen_ts.load_state_dict(checkpoint['gen_ts'])
+    D_s.load_state_dict(checkpoint['D_s'])
+    D_t.load_state_dict(checkpoint['D_t'])
+    model.load_state_dict(checkpoint['model'])
+    ad_net.load_state_dict(checkpoint['ad_net'])
+    optimizer_G.load_state_dict(checkpoint['optimizer_G'])
+    optimizer_D_s.load_state_dict(checkpoint['optimizer_D_s'])
+    optimizer_D_t.load_state_dict(checkpoint['optimizer_D_t'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+    optimizer_ad.load_state_dict(checkpoint['optimizer_ad'])
+    
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -251,11 +280,21 @@ while True:
     optimizer_G.zero_grad()
     
     # Identity loss
-    same_t = gen_st(f_t)
-    loss_identity_t = criterion_identity(same_t, f_t)
+    if MODELTYPE == 'G':
+        same_t = gen_st(f_s)
+        loss_identity_t = criterion_identity(same_t, f_s)
+    else:
+        same_t = gen_st(f_t)
+        loss_identity_t = criterion_identity(same_t, f_t)
 
-    same_s = gen_ts(f_s)
-    loss_identity_s = criterion_identity(same_s, f_s)
+
+    if MODELTYPE == 'G':
+        same_s = gen_ts(f_t)
+        loss_identity_s = criterion_identity(same_s, f_t)
+    else:
+        same_s = gen_ts(f_s)
+        loss_identity_s = criterion_identity(same_s, f_s)
+
 
     # Gan loss
     f_st = gen_st(f_s)
@@ -375,9 +414,9 @@ while True:
 
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
     
-    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] Accuracy: {6:.2f} Loss: {4:.6f} Loss+G: {5:.6f}'.format(
-        epoch, niter%iter_per_epoch, iter_per_epoch,
-        100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item()), end='\r')
+    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] Loss: {4:.6f} Loss+G: {5:.6f} Accuracy: {6:.2f}, Best_Test {7:.2f}'.format(
+        epoch, niter%iter_per_epoch, iter_per_epoch, \
+            100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item(), best_test), end='\r')
 
     writer.add_scalar('bitranslation/Loss', loss.item(), niter)
     writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
@@ -387,9 +426,11 @@ while True:
         with torch.no_grad(): 
             epoch = niter // iter_per_epoch
             
-            if epoch % 3 == 0:
-                for param_group in optimizer.param_groups:
-                    param_group["lr"] = param_group["lr"] * 0.3
+
+            if MODELTYPE == 'I':
+                if epoch % 50 == 0:
+                    for param_group in optimizer.param_groups:
+                        param_group["lr"] = param_group["lr"] * 0.3
 
             n = 0
             nagree = 0
@@ -423,7 +464,36 @@ while True:
         if epoch >= opt.n_epochs:
             print('')
             print('train complete')
+            
+            
+            modelsave = '{0}/{1}_{2}.pth'.format(run_dir, opt.prefix, epoch)
+
+
+            optimizer_G = torch.optim.Adam(chain(gen_st.parameters(), gen_ts.parameters()), lr=0.0003)
+            optimizer_D_s = torch.optim.Adam(D_s.parameters(), lr=0.0003)
+            optimizer_D_t = torch.optim.Adam(D_t.parameters(), lr=0.0003)
+            optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
+            optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
+
+            torch.save({
+                'epoch': epoch,
+                'best_test': best_test,
+                'niter': niter,
+                'gen_st': gen_st.state_dict(),
+                'gen_ts': gen_ts.state_dict(),
+                'D_s': D_s.state_dict(),
+                'D_t': D_s.state_dict(),
+                'model': model.state_dict(),
+                'ad_net': ad_net.state_dict(),
+                'optimizer_G': optimizer_G.state_dict(),
+                'optimizer_D_s': gen_ts.state_dict(),
+                'optimizer_D_t': optimizer_D_t.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'optimizer_ad': optimizer_ad.state_dict(),
+                }, modelsave)
+
             run_dir_complete = '{0}_{1:0.2f}'.format(run_dir[:-8], best_test)
             os.rename(run_dir, run_dir_complete)
+
             break
 
