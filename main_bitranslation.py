@@ -452,12 +452,31 @@ while True:
             if best_test < test_accuracy:
                 best_test = test_accuracy
 
+                modelsave = '{0}/{1}_{2}.pth'.format(run_dir, opt.prefix, epoch)
+
+                torch.save({
+                    'epoch': epoch,
+                    'best_test': best_test,
+                    'niter': niter,
+                    'gen_st': gen_st.state_dict(),
+                    'gen_ts': gen_ts.state_dict(),
+                    'D_s': D_s.state_dict(),
+                    'D_t': D_s.state_dict(),
+                    'model': model.state_dict(),
+                    'ad_net': ad_net.state_dict(),
+                    'optimizer_G': optimizer_G.state_dict(),
+                    'optimizer_D_s': gen_ts.state_dict(),
+                    'optimizer_D_t': optimizer_D_t.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'optimizer_ad': optimizer_ad.state_dict(),
+                    }, modelsave)
+
             print('')
             print('Test loss: {0}\t accuracy : {1}'.format(
                 test_loss, test_accuracy))
 
-            writer.add_scalar('bitranslation/test_loss', test_loss, niter)
-            writer.add_scalar('bitranslation/test_accuracy', test_accuracy, niter)
+            writer.add_scalar('bitranslation/test_loss', test_loss, epoch)
+            writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
                 
 
 
@@ -465,15 +484,7 @@ while True:
             print('')
             print('train complete')
             
-            
             modelsave = '{0}/{1}_{2}.pth'.format(run_dir, opt.prefix, epoch)
-
-
-            optimizer_G = torch.optim.Adam(chain(gen_st.parameters(), gen_ts.parameters()), lr=0.0003)
-            optimizer_D_s = torch.optim.Adam(D_s.parameters(), lr=0.0003)
-            optimizer_D_t = torch.optim.Adam(D_t.parameters(), lr=0.0003)
-            optimizer = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
-            optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
 
             torch.save({
                 'epoch': epoch,

@@ -5,6 +5,10 @@
 			"path": "../../../dataset/"
 		},
 		{
+			"name": "python",
+			"path": "../../"
+		},
+		{
 			"name": "Examples",
 			"path": "../../Examples"
 		},
