@@ -26,7 +26,7 @@ os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='3')
-parser.add_argument('--lr_decay', type=int, default='50')
+parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
@@ -47,8 +47,8 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}_{6}'.format(
-    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight, opt.start_epoch)
+modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}_{6}_{7}'.format(
+    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight, opt.start_epoch, opt.lr_decay)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -211,6 +211,23 @@ epoch = 0
 best_test = 0
 
 if opt.modelload is not None:
+    if not opt.modelload.endswith(".pth"):
+        file_list = os.listdir(opt.modelload)
+        file_list_pt = [file for file in file_list if file.endswith(".pth")]
+
+        best = 0
+        for file in file_list_pt:
+            besttemp = file.split('_')
+            besttemp = besttemp[-1].split('.')[0] + '.' + besttemp[-1].split('.')[1]
+            if float(best) < float(besttemp):
+                best = besttemp
+                bestpt = file
+        
+
+        opt.modelload = '{0}/{1}'.format(opt.modelload, bestpt)
+
+    print('model load')
+    print(' -> ', opt.modelload)   
     checkpoint = torch.load(opt.modelload, map_location='cuda:{0}'.format(opt.gpu))
     epoch = checkpoint['epoch']
     best_test = checkpoint['best_test']
@@ -424,10 +441,9 @@ while True:
             epoch = niter // iter_per_epoch
             
 
-            if MODELTYPE == 'I':
-                if epoch % opt.lr_decay == 0:
-                    for param_group in optimizer.param_groups:
-                        param_group["lr"] = param_group["lr"] * 0.3
+            if epoch % opt.lr_decay == 0:
+                for param_group in optimizer.param_groups:
+                    param_group["lr"] = param_group["lr"] * 0.3
 
             n = 0
             nagree = 0
@@ -451,22 +467,23 @@ while True:
 
                 modelsave = '{0}/{1}_{2}_{3:.1f}.pth'.format(run_dir, opt.prefix, epoch, best_test)
 
-                torch.save({
-                    'epoch': epoch,
-                    'best_test': best_test,
-                    'niter': niter,
-                    'gen_st': gen_st.state_dict(),
-                    'gen_ts': gen_ts.state_dict(),
-                    'D_s': D_s.state_dict(),
-                    'D_t': D_s.state_dict(),
-                    'model': model.state_dict(),
-                    'ad_net': ad_net.state_dict(),
-                    'optimizer_G': optimizer_G.state_dict(),
-                    'optimizer_D_s': gen_ts.state_dict(),
-                    'optimizer_D_t': optimizer_D_t.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'optimizer_ad': optimizer_ad.state_dict(),
-                    }, modelsave)
+                if best_test > 50:
+                    torch.save({
+                        'epoch': epoch,
+                        'best_test': best_test,
+                        'niter': niter,
+                        'gen_st': gen_st.state_dict(),
+                        'gen_ts': gen_ts.state_dict(),
+                        'D_s': D_s.state_dict(),
+                        'D_t': D_s.state_dict(),
+                        'model': model.state_dict(),
+                        'ad_net': ad_net.state_dict(),
+                        'optimizer_G': optimizer_G.state_dict(),
+                        'optimizer_D_s': gen_ts.state_dict(),
+                        'optimizer_D_t': optimizer_D_t.state_dict(),
+                        'optimizer': optimizer.state_dict(),
+                        'optimizer_ad': optimizer_ad.state_dict(),
+                        }, modelsave)
 
             print('')
             print('Test loss: {0:.6f}\t accuracy : {1:.1f} {2}'.format(

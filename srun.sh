@@ -14,9 +14,38 @@ if [ -z "$1" ]
     gpu="${1}"
 fi
 
+alphabet_set="A B C D E F G H I" 
+weight_in_loss_g="1,0.01,0.1,0.1" 
+cyc_loss_weight="0.01" 
+cla_plus_weight="0.3"
+postfix="--n_epochs 100 --start_epoch 30 --lr 0.03"
+
+weight_in_loss_g_set="1,0.01,0.1,0.1" 
+# cyc_loss_weight_set="0.01 0.05 0.001 0.005" 
+cyc_loss_weight_set="0.01" 
+# cla_plus_weight_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
+cla_plus_weight_set="0.3"
+
+for alphabet in ${alphabet_set}
+do
+  for weight_in_loss_g in ${weight_in_loss_g_set}
+  do
+    for cyc_loss_weight in ${cyc_loss_weight_set}
+    do
+      for cla_plus_weight in ${cla_plus_weight_set}
+      do
+        printprom="python main_bitranslation.py --prefix bitranslation_A ${postfix} --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
+        echo ${printprom}
+        ${printprom}
+      done
+    done
+  done
+done
+
+
 # weight_in_loss_g_set="1,0.01,0.1,0.1" 
 # cyc_loss_weight_set="0.01 0.05 0.001 0.005" 
-# cla_plus_weight_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
+# cla_plus_weight_set="0.3"
 
 # for weight_in_loss_g in ${weight_in_loss_g_set}
 # do
@@ -30,22 +59,4 @@ fi
 #     done
 #   done
 # done
-
-
-weight_in_loss_g_set="1,0.01,0.1,0.1" 
-cyc_loss_weight_set="0.05 0.001 0.005" 
-cla_plus_weight_set="0.3"
-
-for weight_in_loss_g in ${weight_in_loss_g_set}
-do
-  for cyc_loss_weight in ${cyc_loss_weight_set}
-  do
-    for cla_plus_weight in ${cla_plus_weight_set}
-    do
-      printprom="python main_bitranslation.py --prefix bitranslation_A --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
-      echo ${printprom}
-      ${printprom}
-    done
-  done
-done
 
