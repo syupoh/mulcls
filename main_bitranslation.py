@@ -25,7 +25,8 @@ import Networks2 as net
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--start_epoch', type=int, default='50')
+parser.add_argument('--start_epoch', type=int, default='3')
+parser.add_argument('--lr_decay', type=int, default='50')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
@@ -46,21 +47,11 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}'.format(
-    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight)
+modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}_{6}'.format(
+    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight, opt.start_epoch)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
-prompt = ('====================================\n')
-for arg in vars(opt):
-    prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
-prompt = prompt+('====================================\n')
-
-print(prompt, end='')
-
-f = open('{0}/opt.txt'.format(run_dir), 'w')
-f.write(prompt)
-f.close()
 
 prompt = ''
 prompt += ('====================================\n')
@@ -70,13 +61,15 @@ for arg in vars(opt):
 prompt += ('====================================\n')
 print(prompt, end='')
 
-cuda = False
+f = open('{0}/opt.txt'.format(run_dir), 'w')
+f.write(prompt)
+f.close()
+
 if torch.cuda.is_available():
-    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]="{0}".format(opt.gpu)
-    cuda = True
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "{0}".format(opt.gpu)
     torch.cuda.set_device(opt.gpu)
-    device = torch.device('cuda:{0}'.format(opt.gpu))
+    # device = torch.device('cuda:{0}'.format(opt.gpu))
 # Configure data loader
 
 import utils
@@ -186,11 +179,11 @@ criterion_identity = torch.nn.L1Loss()
 criterion_Sem = torch.nn.L1Loss()
 criterion_percep = torch.nn.MSELoss()
 
-vgg_model = net.VGG16()
-if torch.cuda.is_available():
-    vgg_model.cuda()
+# vgg_model = net.VGG16()
+# if torch.cuda.is_available():
+#     vgg_model.cuda()
 
-vgg_model.eval()
+# vgg_model.eval()
 
 optimizer_G = torch.optim.Adam(chain(gen_st.parameters(), gen_ts.parameters()), lr=0.0003)
 optimizer_D_s = torch.optim.Adam(D_s.parameters(), lr=0.0003)
@@ -200,8 +193,12 @@ optimizer_ad = torch.optim.SGD(ad_net.parameters(), lr=opt.lr, weight_decay=opt.
 
 ### Initialize weights
 
-FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
-LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+if torch.cuda.is_available():
+    FloatTensor = torch.cuda.FloatTensor
+    LongTensor = torch.cuda.LongTensor
+else:
+    FloatTensor = torch.FloatTensor
+    LongTensor = torch.LongTensor
 
 from torchvision.utils import make_grid
 
@@ -428,7 +425,7 @@ while True:
             
 
             if MODELTYPE == 'I':
-                if epoch % 50 == 0:
+                if epoch % opt.lr_decay == 0:
                     for param_group in optimizer.param_groups:
                         param_group["lr"] = param_group["lr"] * 0.3
 
@@ -452,7 +449,7 @@ while True:
             if best_test < test_accuracy:
                 best_test = test_accuracy
 
-                modelsave = '{0}/{1}_{2}.pth'.format(run_dir, opt.prefix, epoch)
+                modelsave = '{0}/{1}_{2}_{3:.1f}.pth'.format(run_dir, opt.prefix, epoch, best_test)
 
                 torch.save({
                     'epoch': epoch,
@@ -472,8 +469,8 @@ while True:
                     }, modelsave)
 
             print('')
-            print('Test loss: {0}\t accuracy : {1}'.format(
-                test_loss, test_accuracy))
+            print('Test loss: {0:.6f}\t accuracy : {1:.1f} {2}'.format(
+                test_loss, test_accuracy, run_dir))
 
             writer.add_scalar('bitranslation/test_loss', test_loss, epoch)
             writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
@@ -484,7 +481,7 @@ while True:
             print('')
             print('train complete')
             
-            modelsave = '{0}/{1}_{2}.pth'.format(run_dir, opt.prefix, epoch)
+            modelsave = '{0}/{1}_{2}_{3:.1f}.pth'.format(run_dir, opt.prefix, epoch, best_test)
 
             torch.save({
                 'epoch': epoch,

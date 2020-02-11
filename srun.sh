@@ -31,19 +31,6 @@ fi
 #   done
 # done
 
-# alphabet_set="A B C D E F G H I" 
-alphabet_set="C D E A B F G H" 
-weight_in_loss_g="1,0.01,0.1,0.1" 
-cyc_loss_weight="0.01" 
-cla_plus_weight="0.3"
-postfix="--n_epochs 50 --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
-
-
-for alphabet in ${alphabet_set}
-do
-  python main_bitranslation.py --prefix bitranslation_${alphabet} --model svhn_mnist ${postfix}
-done
-
 
 weight_in_loss_g_set="1,0.01,0.1,0.1" 
 cyc_loss_weight_set="0.05 0.001 0.005" 
