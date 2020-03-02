@@ -14,12 +14,9 @@ if [ -z "$1" ]
     gpu="${1}"
 fi
 
-alphabet_set="A B C D E F G H I" 
-weight_in_loss_g="1,0.01,0.1,0.1" 
-cyc_loss_weight="0.01" 
-cla_plus_weight="0.3"
-postfix="--n_epochs 100 --start_epoch 30 --lr 0.03"
-
+postfix="--n_epochs 50 --start_epoch 3 --lr 0.03 --batch_size 1536"
+alphabet_set="A B C D E G H" 
+lr_set="0.01 0.06 0.09 0.1 0.3 0.6"
 weight_in_loss_g_set="1,0.01,0.1,0.1" 
 # cyc_loss_weight_set="0.01 0.05 0.001 0.005" 
 cyc_loss_weight_set="0.01" 
@@ -33,30 +30,14 @@ do
     for cyc_loss_weight in ${cyc_loss_weight_set}
     do
       for cla_plus_weight in ${cla_plus_weight_set}
-      do
-        printprom="python main_bitranslation.py --prefix bitranslation_A ${postfix} --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
-        echo ${printprom}
-        ${printprom}
+      do  
+        for lr in ${lr_set}
+        do
+          printprom="python main_bitranslation.py --prefix bitranslation_${alphabet} ${postfix} --lr ${lr} --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
+          echo ${printprom}
+          ${printprom}
+        done
       done
     done
   done
 done
-
-
-# weight_in_loss_g_set="1,0.01,0.1,0.1" 
-# cyc_loss_weight_set="0.01 0.05 0.001 0.005" 
-# cla_plus_weight_set="0.3"
-
-# for weight_in_loss_g in ${weight_in_loss_g_set}
-# do
-#   for cyc_loss_weight in ${cyc_loss_weight_set}
-#   do
-#     for cla_plus_weight in ${cla_plus_weight_set}
-#     do
-#       printprom="python main_bitranslation.py --prefix bitranslation_A --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
-#       echo ${printprom}
-#       ${printprom}
-#     done
-#   done
-# done
-

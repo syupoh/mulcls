@@ -243,7 +243,8 @@ if opt.modelload is not None:
     optimizer_D_t.load_state_dict(checkpoint['optimizer_D_t'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     optimizer_ad.load_state_dict(checkpoint['optimizer_ad'])
-    
+
+acc_src = 0
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -273,6 +274,8 @@ while True:
     if epoch > opt.start_epoch:
         loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
     
+    # if acc_src > 80:
+    #     loss += CDAN([features, softmax_output], ad_net, None, None, random_layer)
 
     # if epoch > start_epoch:
     #     if method == 'CDAN-E':
