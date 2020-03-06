@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='3')
 parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
-parser.add_argument('--prefix', type=str, default='bitranslation')
+parser.add_argument('--prefix', type=str, default='vat_entropy')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--lr", type=float, default=2e-4, help="adam: learning rate")
@@ -77,7 +77,7 @@ import utils
 trainset, trainset2, testset = utils.load_data(opt=opt)
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset))) # model
 train_loader2 = torch.utils.data.DataLoader(trainset2, batch_size=opt.batch_size, drop_last=True, sampler=InfiniteSampler(len(trainset2))) # model
-test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=True, drop_last=True) # model
+test_loader = torch.utils.data.DataLoader(testset, batch_size=opt.batch_size, shuffle=False, drop_last=True) # model
 
 n_sample = max(len(trainset), len(trainset2))
 iter_per_epoch = n_sample // opt.batch_size + 1
@@ -85,11 +85,6 @@ iter_per_epoch = n_sample // opt.batch_size + 1
 src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
-if opt.prefix.split('_') is not None:
-    MODELTYPE = opt.prefix.split('_')
-    MODELTYPE = MODELTYPE[1]
-else:
-    MODELTYPE = None
 
 modelsplit = opt.model.split('_')
 if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
@@ -146,22 +141,20 @@ def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
 input_size = 512
 num_feature = 1024
 class_num = 10
-model = net.DTN().cuda()
 
-classifier1 = net.Classifier(512, class_num*2)
-classifier1 = classifier1.cuda()
+
+model = net.DTN().cuda()
+classifier_j = net.Classifier(512, class_num*2).cuda()
 
 ### Loss & Optimizers
 # Loss functions
-cls_CE = torch.nn.CrossEntropyLoss().cuda()
-enc_CE = torch.nn.CrossEntropyLoss().cuda()
-vat_loss = VATLoss()
+criterion_CE = torch.nn.CrossEntropyLoss().cuda()
+criterion_VAT = VATLoss().cuda()
 
 # Optimizers
+
 model_optim = torch.optim.Adam(model.parameters(), lr=0.0003)
-classifier1_optim = torch.optim.Adam(classifier1.parameters(), lr=0.0003)
-
-
+classifier_j_optim = torch.optim.Adam(classifier_j.parameters(), lr=0.0003)
 
 # ----------
 #  Training
@@ -172,33 +165,129 @@ epoch = 0
 best_test = 0
 
 
+# zerotensor = torch.zeros(opt.batch_size, dtype=torch.long).cuda()
+# torch.cat( (p_c_t, zerotensor))
+
 acc_src = 0
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
-    x_t, tgt_y = next(tgt_train_iter)
+    x_t, y_t = next(tgt_train_iter)
     x_s = x_s.cuda()
     y_s = y_s.cuda()
     x_t = x_t.cuda()
 
+    
     model_optim.zero_grad()
-    classifier1_optim.zero_grad()
+    classifier_j_optim.zero_grad()
+
+    for child in classifier_j.children():
+        for param in child.parameters():
+            param.requires_grad = True
+    for child in model.children():
+        for param in child.parameters():
+            param.requires_grad = True
 
     # Networks
-    f_s, p_s = model(x_s)
-    f_t, p_t = model(x_t)
+    f_s, p_c_s = model(x_s)
+    f_t, p_c_t = model(x_t)
+    p_j_s = classifier_j(f_s)
+    p_j_t = classifier_j(f_t)
+    y_t_hat = torch.Tensor.argmax(F.softmax(p_c_t, dim=0), dim=1)
 
+    # pdb.set_trace()
+    ###########
 
+    model_optim.zero_grad()
 
-    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
+    # classifier_c update
+    cls_loss = criterion_CE(p_c_s, y_s)
+    vat_loss = criterion_VAT(model, x_s)
+    vat_loss += criterion_VAT(model, x_t)
     
-    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] Loss: {4:.6f} Loss+G: {5:.6f} Accuracy: {6:.2f}, Best_Test {7:.2f}'.format(
-        epoch, niter%iter_per_epoch, iter_per_epoch, \
-            100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item(), best_test), end='\r')
+    # entropy_loss
 
-    writer.add_scalar('bitranslation/Loss', loss.item(), niter)
-    writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
-    writer.add_scalar('bitranslation/src_accuracy', acc_src.item(), niter)
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(classifier_j.fc[0].weight)
+    pdb.set_trace()
+
+    losses = cls_loss + vat_loss
+    losses.backward(retain_graph=True)
+
+    model_optim.step()
+    classifier_j_optim.zero_grad()
+
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(classifier_j.fc[0].weight)
+    pdb.set_trace()
+
+
+    # only classifier_j update
+    ## freeze encoder
+    ct = 0
+    for child in model.children():
+        ct += 1
+        if ct == 1 or ct == 2:
+            for param in child.parameters():
+                param.requires_grad = False
+        else:
+            for param in child.parameters():
+                param.requires_grad = True      
+
+    joint_loss = criterion_CE(p_j_s, y_s)
+    if epoch > opt.start_epoch:
+        joint_loss += criterion_CE(p_j_t, y_t_hat+10 ) 
+
+    joint_loss.backward(retain_graph=True)
+
+    classifier_j_optim.step()
+    model_optim.zero_grad()
+
+
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(classifier_j.fc[0].weight)
+    pdb.set_trace()
+
+    # only encoder update
+    ## freeze classifier_j 
+    for child in classifier_j.children():
+        for param in child.parameters():
+            param.requires_grad = False
+    for child in model.children():
+        for param in child.parameters():
+            param.requires_grad = True
+                
+    encoder_loss = criterion_CE(p_j_s, y_s+10 )
+    if epoch > opt.start_epoch:
+        encoder_loss += criterion_CE(p_j_t, y_t_hat)
+    encoder_loss.backward()
+
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(classifier_j.fc[0].weight)
+    pdb.set_trace()
+
+    model_optim.step()    
+
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(classifier_j.fc[0].weight)
+    pdb.set_trace()
+
+    acc_tgt = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_j_t.detach())).data.cpu().numpy(), axis=1) == (y_t.data.cpu().numpy()+10)))
+    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_c_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
+    
+    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] cls_loss: {4:.6f} joint_loss: {5:.6f} encoder_loss: {6:.6f} acc_src: {7:.2f} Best_Test {8:.2f} acc_tgt {9:.2f}'.format(
+        epoch, niter%iter_per_epoch, iter_per_epoch, \
+            100. * niter / (iter_per_epoch*opt.n_epochs), cls_loss.item(), joint_loss.item(), encoder_loss.item(), acc_src.item(), best_test, acc_tgt), end='\r')
+
+    writer.add_scalar('vat_entropy/cls_loss', cls_loss.item(), niter)
+    writer.add_scalar('vat_entropy/joint_loss', joint_loss.item(), niter)
+    writer.add_scalar('vat_entropy/encoder_loss', encoder_loss.item(), niter)
+    writer.add_scalar('vat_entropy/acc_src', acc_src.item(), niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
@@ -211,9 +300,11 @@ while True:
             for X, Y in test_loader: 
                 n += X.size()[0]
                 X_test = X.cuda() 
-                Y_test = Y.cuda() 
+                Y_test = Y.cuda() + 10
 
-                feature, output = model(X_test) #
+                feature, output2 = model(X_test) #
+                output = classifier_j(f_t)
+
                 test_loss += nn.CrossEntropyLoss()(output, Y_test).item()
                 pred = output.data.cpu().max(1, keepdim=True)[1]
                 correct += pred.eq(Y_test.data.cpu().view_as(pred)).sum().item()
@@ -248,8 +339,8 @@ while True:
             print('Test loss: {0:.6f}\t accuracy : {1:.1f} {2}'.format(
                 test_loss, test_accuracy, run_dir))
 
-            writer.add_scalar('bitranslation/test_loss', test_loss, epoch)
-            writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
+            writer.add_scalar('vat_entropy/test_loss', test_loss, epoch)
+            writer.add_scalar('vat_entropy/test_accuracy', test_accuracy, epoch)
                 
 
 

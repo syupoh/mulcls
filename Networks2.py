@@ -25,6 +25,40 @@ def grl_hook(coeff):
     return fun1
 
 # For SVHN dataset
+class Encoder(nn.Module):
+    def __init__(self):
+        super(Encoder, self).__init__()
+        self.conv_params = nn.Sequential (
+                nn.Conv2d(3, 64, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(64),
+                nn.Dropout2d(0.1),
+                nn.ReLU(),
+                nn.Conv2d(64, 128, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(128),
+                nn.Dropout2d(0.3),
+                nn.ReLU(),
+                nn.Conv2d(128, 256, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(256),
+                nn.Dropout2d(0.5),
+                nn.ReLU()
+                )
+    
+        self.fc_params = nn.Sequential (
+                nn.Linear(256*4*4, 512),
+                nn.BatchNorm1d(512),
+                nn.ReLU(),
+                nn.Dropout()
+                )
+
+    def forward(self, x):
+        x = self.conv_params(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc_params(x)
+
+        return x
+
+
+# For SVHN dataset
 class DTN(nn.Module):
     def __init__(self):
         super(DTN, self).__init__()
@@ -82,11 +116,10 @@ class Classifier(nn.Module):
             nn.Linear(180,120),
             nn.ReLU(),
         )
-        self.fc1 = nn.Sequential(
-            nn.Linear(120,class_num)
-        )
+        self.fc1 = nn.Linear(120, class_num)
+        
     def forward(self, x):
-        x = x.view(x.size(0),-1)
+        x = x.view(x.size(0), -1)
         x = self.fc(x)
         x = self.fc1(x)
         return x

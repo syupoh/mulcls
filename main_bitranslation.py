@@ -10,6 +10,9 @@ from torch.autograd import Variable
 from tensorboardX import SummaryWriter
 from itertools import chain
 
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
 import argparse
 import os
 import numpy as np
@@ -28,7 +31,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='3')
 parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
-parser.add_argument('--prefix', type=str, default='bitranslation')
+parser.add_argument('--prefix', type=str, default='bitranslation_C')
 parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--lr", type=float, default=2e-4, help="adam: learning rate")
@@ -245,6 +248,7 @@ if opt.modelload is not None:
     optimizer_ad.load_state_dict(checkpoint['optimizer_ad'])
 
 acc_src = 0
+tsne_model = TSNE(learning_rate=100)
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -438,6 +442,43 @@ while True:
     writer.add_scalar('bitranslation/Loss', loss.item(), niter)
     writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
     writer.add_scalar('bitranslation/src_accuracy', acc_src.item(), niter)
+
+    transformed = tsne_model.fit_transform(f_s.detach().cpu())
+    xs = transformed[:, 0]
+    ys = transformed[:, 1]
+    fig = plt.figure()
+    plt.scatter(xs, ys)
+    writer.add_figure('f_s_tsne', fig, niter)
+
+    transformed = tsne_model.fit_transform(f_t.detach().cpu())
+    xs = transformed[:, 0]
+    ys = transformed[:, 1]
+    fig = plt.figure()
+    plt.scatter(xs, ys)
+    writer.add_figure('f_t_tsne', fig, niter)
+
+    
+    # model = TSNE(learning_rate=100)
+    # transformed = model.fit_transform(feature)
+
+    # xs = transformed[:,0]
+    # ys = transformed[:,1]
+    
+
+    # plt.show()
+
+    # writer.add_figure('', plt.scatter(xs, ys, c=labels), niter)
+    # data_grid = []
+    # for x in [src_x, fake_tgt_x, tgt_x]:
+    #     x = x[0:opt.display].to(torch.device('cpu'))
+    #     if x.size(1) == 1:
+    #         x = x.repeat(1, 3, 1, 1)  # grayscale2rgb
+    #     data_grid.append(x)
+    # grid = make_grid(torch.cat(tuple(data_grid), dim=0),
+    #                 normalize=True, range=(X_min, X_max), nrow=opt.display) # for SVHN?
+    # writer.add_image('generated_{0}'.format(opt.prefix), grid, niter)
+
+    # writer.add_image('', niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
