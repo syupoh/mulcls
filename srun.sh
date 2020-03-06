@@ -14,16 +14,16 @@ if [ -z "$1" ]
     gpu="${1}"
 fi
 
-postfix="--n_epochs 50 --start_epoch 3 --lr 0.03 --batch_size 1536"
+postfix="--n_epochs 50 --start_epoch 0 --lr 0.03 --batch_size 1536"
 alphabet_set="A B C D E G H" 
-lr_set="0.01 0.06 0.09 0.1 0.3 0.6"
+lr_set="0.03 0.01 0.06 0.09 0.1 0.3 0.6"
 weight_in_loss_g_set="1,0.01,0.1,0.1" 
 # cyc_loss_weight_set="0.01 0.05 0.001 0.005" 
 cyc_loss_weight_set="0.01" 
 # cla_plus_weight_set="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9"
 cla_plus_weight_set="0.3"
 
-for alphabet in ${alphabet_set}
+for lr in ${lr_set}
 do
   for weight_in_loss_g in ${weight_in_loss_g_set}
   do
@@ -31,7 +31,7 @@ do
     do
       for cla_plus_weight in ${cla_plus_weight_set}
       do  
-        for lr in ${lr_set}
+        for alphabet in ${alphabet_set}
         do
           printprom="python main_bitranslation.py --prefix bitranslation_${alphabet} ${postfix} --lr ${lr} --model svhn_mnist --gpu ${gpu} --cyc_loss_weight ${cyc_loss_weight} --weight_in_loss_g ${weight_in_loss_g} --cla_plus_weight ${cla_plus_weight}"
           echo ${printprom}
@@ -41,3 +41,15 @@ do
     done
   done
 done
+
+# gpu=0 -> start_epoch 3
+# gpu=1 -> start_epoch 0
+
+# if [ ${win} = 0 ]  
+# then  
+#   exp="mnist_svhn"
+# elif [ $# = 1 ]  
+# then  
+#   echo "첫번째 인수는 $args1"
+# elif [ $# = 2 ]  
+# then  

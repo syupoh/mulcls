@@ -28,11 +28,11 @@ import Networks2 as net
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--start_epoch', type=int, default='3')
+parser.add_argument('--start_epoch', type=int, default='0')
 parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument('--prefix', type=str, default='bitranslation_C')
-parser.add_argument("--n_epochs", type=int, default=500, help="number of epochs of training")
+parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--lr", type=float, default=2e-4, help="adam: learning rate")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
@@ -320,19 +320,18 @@ while True:
     # Gan loss
     f_st = gen_st(f_s)
     pred_f_st, aux_f_st = D_t(f_st)
-    
     if MODELTYPE == 'B' or MODELTYPE == 'E':
-        loss_G_s2t = criterion_GAN(pred_f_st, fake_label)
+        loss_G_s2t = criterion_GAN(pred_f_st, fake_label[0:int(len(fake_label)/2)].view(-1, 1))
     else:
-        loss_G_s2t = criterion_GAN(pred_f_st, y_s.float())
+        loss_G_s2t = criterion_GAN(pred_f_st, y_s.float().view(-1, 1))
 
     f_ts = gen_ts(f_t)
     pred_f_ts, aux_f_ts = D_s(f_ts)
     
     if MODELTYPE == 'B' or MODELTYPE == 'E':
-        loss_G_t2s = criterion_GAN(pred_f_ts, real_label)
+        loss_G_t2s = criterion_GAN(pred_f_ts, real_label[0:int(len(real_label)/2)].view(-1, 1))
     else:
-        loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float())
+        loss_G_t2s = criterion_GAN(pred_f_ts, y_s.float().view(-1, 1))
 
     ##### cycle loss
     f_sts = gen_ts(f_st)
@@ -344,6 +343,7 @@ while True:
     # loss_cycle_tst = criterion_percep(vgg_model(f_t), vgg_model(f_tst))
     
 
+    # pdb.set_trace()
     # sem loss
     pred_f_sts = model.classifier(f_sts)
     pred_f_st = model.classifier(f_st)
@@ -377,10 +377,10 @@ while True:
     loss_D_aux = 0
     ###### Discriminator S ######
     optimizer_D_s.zero_grad()
-
+    
     # Real loss
     pred_f_s, aux_f_s = D_s(f_s.detach())
-    loss_D_real = criterion_GAN(pred_f_s, real_label)
+    loss_D_real = criterion_GAN(pred_f_s, real_label[0:int(len(real_label)/2)].view(-1, 1))
 
     if MODELTYPE == 'D' or MODELTYPE == 'E':
         pass
@@ -390,7 +390,7 @@ while True:
     # Fake loss
     f_ts = f_ts_buffer.push_and_pop(f_ts)
     pred_f_ts, aux_f_ts = D_s(f_ts.detach())
-    loss_D_fake = criterion_GAN(pred_f_ts, fake_label)
+    loss_D_fake = criterion_GAN(pred_f_ts, fake_label[0:int(len(fake_label)/2)].view(-1, 1))
 
     # Total loss
     if MODELTYPE == 'D' or MODELTYPE == 'E':
@@ -408,12 +408,12 @@ while True:
 
     # Real loss
     pred_f_t, aux_f_t = D_t(f_t.detach())
-    loss_D_real = criterion_GAN(pred_f_t, real_label)
+    loss_D_real = criterion_GAN(pred_f_t, real_label[0:int(len(real_label)/2)].view(-1, 1))
     
     # Fake loss
     f_st = f_st_buffer.push_and_pop(f_st)
     pred_f_st, aux_f_st = D_t(f_st.detach())
-    loss_D_fake = criterion_GAN(pred_f_st, fake_label)
+    loss_D_fake = criterion_GAN(pred_f_st, fake_label[0:int(len(fake_label)/2)].view(-1, 1))
 
     if MODELTYPE == 'C':
         loss_D_aux = criterion_CE(aux_f_st, y_s)
@@ -443,19 +443,6 @@ while True:
     writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
     writer.add_scalar('bitranslation/src_accuracy', acc_src.item(), niter)
 
-    transformed = tsne_model.fit_transform(f_s.detach().cpu())
-    xs = transformed[:, 0]
-    ys = transformed[:, 1]
-    fig = plt.figure()
-    plt.scatter(xs, ys)
-    writer.add_figure('f_s_tsne', fig, niter)
-
-    transformed = tsne_model.fit_transform(f_t.detach().cpu())
-    xs = transformed[:, 0]
-    ys = transformed[:, 1]
-    fig = plt.figure()
-    plt.scatter(xs, ys)
-    writer.add_figure('f_t_tsne', fig, niter)
 
     
     # model = TSNE(learning_rate=100)
@@ -482,6 +469,7 @@ while True:
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
+        
             epoch = niter // iter_per_epoch
             
 
@@ -535,7 +523,25 @@ while True:
 
             writer.add_scalar('bitranslation/test_loss', test_loss, epoch)
             writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
-                
+            
+
+            transformed = tsne_model.fit_transform(f_s.detach().cpu())
+            xs = transformed[:, 0]
+            ys = transformed[:, 1]
+            fig = plt.figure()
+            plt.scatter(xs, ys, c=y_s.cpu())
+            plt.xlim((-20, 20))
+            plt.ylim((-25, 25))
+            writer.add_figure('f_s_tsne', fig, epoch)
+
+            transformed = tsne_model.fit_transform(f_t.detach().cpu())
+            xs = transformed[:, 0]
+            ys = transformed[:, 1]
+            fig = plt.figure()
+            plt.scatter(xs, ys, c=y_s.cpu())
+            plt.xlim((-20, 20))
+            plt.ylim((-25, 25))
+            writer.add_figure('f_t_tsne', fig, epoch)
 
 
         if epoch >= opt.n_epochs:

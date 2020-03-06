@@ -1,4 +1,6 @@
-from sklearn.manifold import TSNE
+# from sklearn.manifold import TSNE
+from tsnecuda import TSNE
+
 from datetime import datetime
 from tensorboardX import SummaryWriter
 import argparse
@@ -114,15 +116,19 @@ while True:
 
     ### TSNE
     tsne_model = TSNE(learning_rate=100)
-    transformed = tsne_model.fit_transform(f_s.detach().cpu())
+    transformed = tsne_model.fit_transform(f_s.detach())
+    # transformed = tsne_model.fit_transform(f_s.detach().cpu())
+
+    X_embedded = TSNE(n_components=2, perplexity=15, learning_rate=10).fit_transform(f_s.detach())
 
     xs = transformed[:, 0]
     ys = transformed[:, 1]
 
     fig = plt.figure()
     plt.scatter(xs, ys, c=y_s.cpu())
-    # fig.savefig('f_s_tsne.png')
+    fig.savefig('f_s_tsne.png')
 
+    pdb.set_trace()
 
 
     writer.add_figure('f_s_tsne', fig, niter)
