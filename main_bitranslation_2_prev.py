@@ -143,8 +143,7 @@ num_feature = 1024
 class_num = 10
 
 
-generator_g = net.Encoder().cuda()
-classifier_c  = net.Classifier(512, class_num).cuda()
+model = net.DTN().cuda()
 classifier_j = net.Classifier(512, class_num*2).cuda()
 
 ### Loss & Optimizers
@@ -154,8 +153,7 @@ criterion_VAT = VATLoss().cuda()
 
 # Optimizers
 
-generator_g_optim = torch.optim.Adam(generator_g.parameters(), lr=0.0003)
-classifier_c_optim = torch.optim.Adam(classifier_c.parameters(), lr=0.0003)
+model_optim = torch.optim.Adam(model.parameters(), lr=0.0003)
 classifier_j_optim = torch.optim.Adam(classifier_j.parameters(), lr=0.0003)
 
 # ----------
@@ -180,22 +178,19 @@ while True:
     x_t = x_t.cuda()
 
     
-    generator_g_optim.zero_grad()
-    classifier_c_optim.zero_grad()
+    model_optim.zero_grad()
     classifier_j_optim.zero_grad()
 
     for child in classifier_j.children():
         for param in child.parameters():
             param.requires_grad = True
-    for child in generator_g.children():
+    for child in model.children():
         for param in child.parameters():
             param.requires_grad = True
 
     # Networks
-    f_s = generator_g(x_s)
-    f_t = generator_g(x_t) 
-    p_c_s = classifier_c(f_s)
-    p_c_t = classifier_c(f_t)
+    f_s, p_c_s = model(x_s)
+    f_t, p_c_t = model(x_t)
     p_j_s = classifier_j(f_s)
     p_j_t = classifier_j(f_t)
     y_t_hat = torch.Tensor.argmax(F.softmax(p_c_t, dim=0), dim=1)
@@ -203,33 +198,55 @@ while True:
     # pdb.set_trace()
     ###########
 
-    ## no freeze
     # classifier_c update
-
     cls_loss = criterion_CE(p_c_s, y_s)
     vat_loss = criterion_VAT(model, x_s)
     vat_loss += criterion_VAT(model, x_t)
     
+    # entropy_loss
 
-    print(generator_g.conv_params[0].weight)
-    print(generator_g.fc_params[0].weight)
-    print(classifier_c.fc[0].weight)
-    print(classifier_j.fc[0].weight)
-    pdb.set_trace()
+    # print(model.fc_params[0].weight)
+    # print(model.classifier.weight)
+    # print(classifier_j.fc[0].weight)
+    # pdb.set_trace()
 
-    loss_c_g = cls_loss + vat_loss
+    losses = cls_loss + vat_loss
     losses.backward(retain_graph=True)
 
     model_optim.step()
 
-    print(generator_g.conv_params[0].weight)
-    print(generator_g.fc_params[0].weight)
-    print(classifier_c.fc[0].weight)
+    # print(model.fc_params[0].weight)
+    # print(model.classifier.weight)
+    # print(classifier_j.fc[0].weight)
+    # pdb.set_trace()
+
+
+    # only classifier_j update
+    ## freeze encoder, classifier_c
+
+    classifier_j_optim.zero_grad()
+    
+    for child in model.children():
+        for param in child.parameters():
+            param.requires_grad = False
+            
+    joint_loss = criterion_CE(p_j_s, y_s)
+    if epoch > opt.start_epoch:
+        joint_loss += criterion_CE(p_j_t, y_t_hat+10 ) 
+
+    joint_loss.backward(retain_graph=True)
+
+    classifier_j_optim.step()
+
+
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(model.classifier.weight)
     print(classifier_j.fc[0].weight)
     pdb.set_trace()
 
-    ## freeze classifier_j, classifier_c
     # only encoder update
+    ## freeze classifier_j, classifier_c
     
     model_optim.zero_grad()
 
@@ -252,32 +269,9 @@ while True:
     encoder_loss.backward()
     model_optim.step()    
 
-    print(generator_g.conv_params[0].weight)
-    print(generator_g.fc_params[0].weight)
-    print(classifier_c.fc[0].weight)
-    print(classifier_j.fc[0].weight)
-    pdb.set_trace()
-
-    ## freeze encoder, classifier_c
-    # only classifier_j update
-
-    classifier_j_optim.zero_grad()
-    
-    for child in model.children():
-        for param in child.parameters():
-            param.requires_grad = False
-            
-    joint_loss = criterion_CE(p_j_s, y_s)
-    if epoch > opt.start_epoch:
-        joint_loss += criterion_CE(p_j_t, y_t_hat+10 ) 
-
-    joint_loss.backward(retain_graph=True)
-
-    classifier_j_optim.step()
-
-    print(generator_g.conv_params[0].weight)
-    print(generator_g.fc_params[0].weight)
-    print(classifier_c.fc[0].weight)
+    print(model.conv_params[0].weight)
+    print(model.fc_params[0].weight)
+    print(model.classifier.weight)
     print(classifier_j.fc[0].weight)
     pdb.set_trace()
 
