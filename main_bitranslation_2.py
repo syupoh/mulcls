@@ -198,8 +198,6 @@ while True:
     # pdb.set_trace()
     ###########
 
-    model_optim.zero_grad()
-
     # classifier_c update
     cls_loss = criterion_CE(p_c_s, y_s)
     vat_loss = criterion_VAT(model, x_s)
@@ -207,8 +205,8 @@ while True:
     
     # entropy_loss
 
-    print(model.conv_params[0].weight)
     print(model.fc_params[0].weight)
+    print(model.classifier.weight)
     print(classifier_j.fc[0].weight)
     pdb.set_trace()
 
@@ -216,26 +214,22 @@ while True:
     losses.backward(retain_graph=True)
 
     model_optim.step()
-    classifier_j_optim.zero_grad()
 
-    print(model.conv_params[0].weight)
     print(model.fc_params[0].weight)
+    print(model.classifier.weight)
     print(classifier_j.fc[0].weight)
     pdb.set_trace()
 
 
     # only classifier_j update
-    ## freeze encoder
-    ct = 0
-    for child in model.children():
-        ct += 1
-        if ct == 1 or ct == 2:
-            for param in child.parameters():
-                param.requires_grad = False
-        else:
-            for param in child.parameters():
-                param.requires_grad = True      
+    ## freeze encoder, classifier_c
 
+    classifier_j_optim.zero_grad()
+    
+    for child in model.children():
+        for param in child.parameters():
+            param.requires_grad = False
+            
     joint_loss = criterion_CE(p_j_s, y_s)
     if epoch > opt.start_epoch:
         joint_loss += criterion_CE(p_j_t, y_t_hat+10 ) 
@@ -243,33 +237,35 @@ while True:
     joint_loss.backward(retain_graph=True)
 
     classifier_j_optim.step()
-    model_optim.zero_grad()
 
 
-    print(model.conv_params[0].weight)
     print(model.fc_params[0].weight)
+    print(model.classifier.weight)
     print(classifier_j.fc[0].weight)
     pdb.set_trace()
 
     # only encoder update
-    ## freeze classifier_j 
+    ## freeze classifier_j, classifier_c
+    
+    model_optim.zero_grad()
+
     for child in classifier_j.children():
         for param in child.parameters():
             param.requires_grad = False
+    ct = 0
     for child in model.children():
-        for param in child.parameters():
-            param.requires_grad = True
-                
+        ct += 1
+        if ct == 3:
+            for param in child.parameters():
+                param.requires_grad = False
+        else:
+            for param in child.parameters():
+                param.requires_grad = True
+
     encoder_loss = criterion_CE(p_j_s, y_s+10 )
     if epoch > opt.start_epoch:
         encoder_loss += criterion_CE(p_j_t, y_t_hat)
     encoder_loss.backward()
-
-    print(model.conv_params[0].weight)
-    print(model.fc_params[0].weight)
-    print(classifier_j.fc[0].weight)
-    pdb.set_trace()
-
     model_optim.step()    
 
     print(model.conv_params[0].weight)

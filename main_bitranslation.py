@@ -469,10 +469,38 @@ while True:
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
-        
+            transformed = tsne_model.fit_transform(f_s.detach().cpu())
+            xs = transformed[:, 0]
+            ys = transformed[:, 1]
+            fig = plt.figure()
+            plt.scatter(xs, ys, c=y_s.cpu())
+            plt.xlim((-20, 20))
+            plt.ylim((-25, 25))
+            writer.add_figure('f_s_tsne', fig, epoch)
+
+            transformed = tsne_model.fit_transform(f_t.detach().cpu())
+            xs = transformed[:, 0]
+            ys = transformed[:, 1]
+            fig = plt.figure()
+            plt.scatter(xs, ys, c=tgt_y.cpu())
+            plt.xlim((-20, 20))
+            plt.ylim((-25, 25))
+            writer.add_figure('f_t_tsne', fig, epoch)
+
+            # real_label = Variable(torch.ones(num_feature)).cuda()
+            # fake_label = Variable(torch.zeros(num_feature)).cuda()
+            transformed = tsne_model.fit_transform(features.detach().cpu())
+            xs = transformed[:, 0]
+            ys = transformed[:, 1]
+            fig = plt.figure()
+            plt.scatter(xs, ys, c=torch.cat((fake_label[0:int(num_feature/2)], real_label[0:int(num_feature/2)]), dim=0).cpu())
+            plt.xlim((-20, 20))
+            plt.ylim((-25, 25))
+            writer.add_figure('f_s_f_t_tsne', fig, epoch)
+
+
             epoch = niter // iter_per_epoch
             
-
             if epoch % opt.lr_decay == 0:
                 for param_group in optimizer.param_groups:
                     param_group["lr"] = param_group["lr"] * 0.3
@@ -525,23 +553,6 @@ while True:
             writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
             
 
-            transformed = tsne_model.fit_transform(f_s.detach().cpu())
-            xs = transformed[:, 0]
-            ys = transformed[:, 1]
-            fig = plt.figure()
-            plt.scatter(xs, ys, c=y_s.cpu())
-            plt.xlim((-20, 20))
-            plt.ylim((-25, 25))
-            writer.add_figure('f_s_tsne', fig, epoch)
-
-            transformed = tsne_model.fit_transform(f_t.detach().cpu())
-            xs = transformed[:, 0]
-            ys = transformed[:, 1]
-            fig = plt.figure()
-            plt.scatter(xs, ys, c=y_s.cpu())
-            plt.xlim((-20, 20))
-            plt.ylim((-25, 25))
-            writer.add_figure('f_t_tsne', fig, epoch)
 
 
         if epoch >= opt.n_epochs:
