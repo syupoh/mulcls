@@ -79,7 +79,7 @@ def load_data(opt):
         trainset = dset.CIFAR10(root=digitroot+'cifar10_data/', train=True, transform=tf_to32, download=True)
     elif modelsplit[0] == 'stl10':
         trainset = dset.STL10(root=digitroot+'STL10_data/', split='train', transform=tf_to32, download=True)
-     
+    
     # trainset.data.shape[-2] # height
     # trainset.data.shape[-1] # width
 

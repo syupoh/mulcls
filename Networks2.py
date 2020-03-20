@@ -2,6 +2,7 @@ from Basic_blocks import *
 import numpy as np
 import warnings
 from torchvision import models
+from torch.autograd import Function
 
 def calc_coeff(iter_num, high=1.0, low=0.0, alpha=10.0, max_iter=10000.0):
     return np.float(2.0 * (high - low) / (1.0 + np.exp(-alpha*iter_num / max_iter)) - (high - low) + low)
@@ -23,6 +24,22 @@ def grl_hook(coeff):
     def fun1(grad):
         return -coeff*grad.clone()
     return fun1
+
+class GradReverse(Function):
+    def __init__(self, lambd):
+        self.lambd = lambd
+
+    def forward(self, x):
+        return x
+
+    def backward(self, grad_output):
+        return (grad_output * -self.lambd)
+
+
+def grad_reverse(x, lambd=1.0):
+    return GradReverse.apply(lambd)(x)
+    # return GradReverse(lambd)(x) 
+
 
 # For SVHN dataset
 class Encoder(nn.Module):
@@ -117,8 +134,18 @@ class Classifier(nn.Module):
             nn.ReLU(),
         )
         self.fc1 = nn.Linear(120, class_num)
+        self.iter_num = 0
+        self.alpha = 10
+        self.low = 0.0
+        self.high = 1.0
+        self.max_iter = 10000.0
         
-    def forward(self, x):
+    def forward(self, x, reverse=False, eta=0.1):
+        if reverse and self.training:
+            coeff = calc_coeff(self.iter_num, self.high, self.low, self.alpha, self.max_iter)
+            x.register_hook(grl_hook(coeff))
+        # if reverse:
+            # x = grad_reverse(x, eta)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         x = self.fc1(x)

@@ -23,7 +23,6 @@ def _l2_normalize(d):
 
 
 class VATLoss(nn.Module):
-
     def __init__(self, xi=10.0, eps=1.0, ip=1):
         """VAT loss
         :param xi: hyperparameter of VAT (default: 10.0)
@@ -35,31 +34,33 @@ class VATLoss(nn.Module):
         self.eps = eps
         self.ip = ip
 
-    def forward(self, model, x):
-
+    def forward(self, model1, model2, x):
         with torch.no_grad():
-            pred, temp = model(x)
+            f = model1(x)
+            pred = model2(f)
             pred = F.softmax(pred, dim=1)
 
         # prepare random unit tensor
         d = torch.rand(x.shape).sub(0.5).to(x.device)
         d = _l2_normalize(d)
 
-        with _disable_tracking_bn_stats(model):
-            # calc adversarial direction
-            for _ in range(self.ip):
-                d.requires_grad_()
-                pred_hat, temp = model(x + self.xi * d)
-                logp_hat = F.log_softmax(pred_hat, dim=1)
-                adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
-                adv_distance.backward()
-                d = _l2_normalize(d.grad)
-                model.zero_grad()
+        with _disable_tracking_bn_stats(model1):
+            with _disable_tracking_bn_stats(model2):
+                # calc adversarial direction
+                for _ in range(self.ip):
+                    d.requires_grad_()
+                    pred_hat = model2(model1(x + self.xi * d))
+                    logp_hat = F.log_softmax(pred_hat, dim=1)
+                    adv_distance = F.kl_div(logp_hat, pred, reduction='batchmean')
+                    adv_distance.backward()
+                    d = _l2_normalize(d.grad)
+                    model1.zero_grad()
+                    model2.zero_grad()
     
-            # calc LDS
-            r_adv = d * self.eps
-            pred_hat, temp = model(x + r_adv)
-            logp_hat = F.log_softmax(pred_hat, dim=1)
-            lds = F.kl_div(logp_hat, pred, reduction='batchmean')
+                # calc LDS
+                r_adv = d * self.eps
+                pred_hat  = model2(model1(x + r_adv))
+                logp_hat = F.log_softmax(pred_hat, dim=1)
+                lds = F.kl_div(logp_hat, pred, reduction='batchmean')
 
         return lds

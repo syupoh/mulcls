@@ -143,6 +143,15 @@ def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
     else:
         return nn.BCELoss()(ad_out, dc_target) 
 
+def writer_tsne(writer, feature, ylabel, epoch, nametag):
+    transformed = tsne_model.fit_transform(feature.detach().cpu())
+    xs = transformed[:, 0]
+    ys = transformed[:, 1]
+    fig = plt.figure()
+    plt.scatter(xs, ys, c=ylabel.cpu())
+    plt.xlim((-30, 30))
+    plt.ylim((-30, 30))
+    writer.add_figure(nametag, fig, epoch)
 
 ### Model
 input_size = 512
@@ -205,14 +214,6 @@ else:
 
 from torchvision.utils import make_grid
 
-# ----------
-#  Training
-# ----------
-print('')
-niter = 0
-epoch = 0
-best_test = 0
-
 if opt.modelload is not None:
     if not opt.modelload.endswith(".pth"):
         file_list = os.listdir(opt.modelload)
@@ -247,6 +248,15 @@ if opt.modelload is not None:
     optimizer.load_state_dict(checkpoint['optimizer'])
     optimizer_ad.load_state_dict(checkpoint['optimizer_ad'])
 
+# ----------
+#  Training
+# ----------
+
+print('')
+niter = 0
+epoch = 0
+best_test = 0
+best_src = 0
 acc_src = 0
 tsne_model = TSNE(learning_rate=100)
 while True:
@@ -433,15 +443,14 @@ while True:
     if epoch > opt.start_epoch:
         optimizer_ad.step()
 
-    acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
-    
-    print('Train Epoch: {0} [{1}/{2} ({3:.01f}%)] Loss: {4:.6f} Loss+G: {5:.6f} Accuracy: {6:.2f}, Best_Test {7:.2f}'.format(
-        epoch, niter%iter_per_epoch, iter_per_epoch, \
-            100. * niter / (iter_per_epoch*opt.n_epochs), loss.item(), total_loss.item(), acc_src.item(), best_test), end='\r')
+    print('Train Epoch: {epoch} [{progress}/{iter_per_epoch}] {total_progress:.01f}%'
+     'Loss: {Loss:.6f} Loss+G: {Loss_G:.6f} Accuracy: {Accuracy:.2f}, Best_Test {Best_Test:.2f}'.format(
+        epoch=epoch, progress=niter%iter_per_epoch, iter_per_epoch=iter_per_epoch, \
+            total_progress=100. * niter / (iter_per_epoch*opt.n_epochs), \
+            Loss=loss.item(), Loss_G=total_loss.item(), Accuracy=best_src, Best_Test=best_test), end='\r')
 
     writer.add_scalar('bitranslation/Loss', loss.item(), niter)
     writer.add_scalar('bitranslation/Loss+G', total_loss.item(), niter)
-    writer.add_scalar('bitranslation/src_accuracy', acc_src.item(), niter)
 
 
     
@@ -469,35 +478,11 @@ while True:
 
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
-            transformed = tsne_model.fit_transform(f_s.detach().cpu())
-            xs = transformed[:, 0]
-            ys = transformed[:, 1]
-            fig = plt.figure()
-            plt.scatter(xs, ys, c=y_s.cpu())
-            plt.xlim((-20, 20))
-            plt.ylim((-25, 25))
-            writer.add_figure('f_s_tsne', fig, epoch)
-
-            transformed = tsne_model.fit_transform(f_t.detach().cpu())
-            xs = transformed[:, 0]
-            ys = transformed[:, 1]
-            fig = plt.figure()
-            plt.scatter(xs, ys, c=tgt_y.cpu())
-            plt.xlim((-20, 20))
-            plt.ylim((-25, 25))
-            writer.add_figure('f_t_tsne', fig, epoch)
-
-            # real_label = Variable(torch.ones(num_feature)).cuda()
-            # fake_label = Variable(torch.zeros(num_feature)).cuda()
-            transformed = tsne_model.fit_transform(features.detach().cpu())
-            xs = transformed[:, 0]
-            ys = transformed[:, 1]
-            fig = plt.figure()
-            plt.scatter(xs, ys, c=torch.cat((fake_label[0:int(num_feature/2)], real_label[0:int(num_feature/2)]), dim=0).cpu())
-            plt.xlim((-20, 20))
-            plt.ylim((-25, 25))
-            writer.add_figure('f_s_f_t_tsne', fig, epoch)
-
+            writer_tsne(writer, f_s, y_s,epoch, 'f_s_tsne')
+            writer_tsne(writer, f_t, tgt_y,epoch, 'f_t_tsne')
+            writer_tsne(writer, features, \
+                torch.cat((fake_label[0:int(num_feature/2)], real_label[0:int(num_feature/2)]), dim=0),\
+                    epoch, 'f_s_f_t_tsne')
 
             epoch = niter // iter_per_epoch
             
@@ -549,6 +534,12 @@ while True:
             print('Test loss: {0:.6f}\t accuracy : {1:.1f} {2}'.format(
                 test_loss, test_accuracy, run_dir))
 
+            acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(p_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))
+            
+            if best_src < acc_src:
+                best_src = acc_src
+
+            writer.add_scalar('bitranslation/src_accuracy', best_src.item(), niter)
             writer.add_scalar('bitranslation/test_loss', test_loss, epoch)
             writer.add_scalar('bitranslation/test_accuracy', test_accuracy, epoch)
             
