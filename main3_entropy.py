@@ -29,19 +29,20 @@ os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='0')
-parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
-parser.add_argument('--prefix', type=str, default='CE_adEnt')
 parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
-parser.add_argument("--lr", type=float, default=2e-2, help="adam: learning rate")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
-parser.add_argument('--model', type=str, default='mnist_svhn')
+parser.add_argument('--model', type=str, default='svhn_mnist')
+parser.add_argument('--prefix', type=str, default='CE_adEnt')
 parser.add_argument('--weight_decay', type=float, default=5e-4)
-parser.add_argument('--cla_plus_weight', type=float, default=3e-1)
-parser.add_argument('--cyc_loss_weight',type=float,default=0.01)
-parser.add_argument('--weight_in_loss_g',type=str,default='1,0.01,0.1,0.1')
+parser.add_argument("--lr", type=float, default=2e-2, help="adam: learning rate")
+parser.add_argument("--lr2", type=float, default=2e-2, help="adam: learning rate")
+# parser.add_argument('--cla_plus_weight', type=float, default=3e-1)
+# parser.add_argument('--cyc_loss_weight',type=float,default=0.01)
+# parser.add_argument('--weight_in_loss_g',type=str,default='1,0.01,0.1,0.1')
+parser.add_argument('--lr_decay', type=int, default='100')
 parser.add_argument('--log_interval', type=int, default=50, help='how many batches to wait before logging training status')
 parser.add_argument('--random', type=bool, default=False, help='whether to use random')
 parser.add_argument('--norm', type=bool, default=True)
@@ -50,8 +51,8 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{0}_{1}_{2}_{3}_{4:0.3f}_{5:0.1f}_{6}_{7}'.format(
-    opt.prefix, opt.model, opt.lr, opt.weight_in_loss_g, opt.cyc_loss_weight, opt.cla_plus_weight, opt.start_epoch, opt.lr_decay)
+modelname = '{prefix}_{model}_{lr}_{lr2}_{weight_decay:0.3f}'.format(
+    prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, weight_decay=opt.weight_decay)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -172,7 +173,7 @@ else:
 
 ### Loss & Optimizers
 optimizer_model = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
-optimizer_classifier1 = torch.optim.Adam(classifier1.parameters(), lr=0.0003)
+optimizer_classifier1 = torch.optim.Adam(classifier1.parameters(), lr=opt.lr2)
 
 ### Initialize weights
 
@@ -248,6 +249,7 @@ while True:
     ##### CE Loss
     # A = model.conv_params[0].weight.data
     # pdb.set_trace()
+    
     loss_ce = nn.CrossEntropyLoss()(output_s.narrow(0, 0, x_s.size(0)), y_s)    
     loss_ce.backward(retain_graph=True)
     optimizer_model.step()
@@ -273,11 +275,16 @@ while True:
     #     entropy = torch.sum(entropy, dim=1)
     #     return entropy 
 
+    # loss_adent = 0
     output_t = classifier1(f_t, reverse=True)
     softmax_output_t = nn.Softmax(dim=1)(output_t)    
-    # loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
-    #     (torch.log(softmax_output_t + 1e-5)), 1))
-    loss_adent = torch.mean(Entropy(softmax_output_t))
+    
+    if opt.prefix == 'adEntPlus':
+        loss_adent = torch.mean(Entropy(softmax_output_t))
+    elif opt.prefix == 'adEntMinus':
+        loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
+            (torch.log(softmax_output_t + 1e-5)), 1))
+    
     loss_adent.backward()
     optimizer_model.step()
     optimizer_classifier1.step()
@@ -296,7 +303,7 @@ while True:
      'Best_Test {Best_Test:.2f}'.format(
         epoch=epoch, progress=niter%iter_per_epoch, iter_per_epoch=iter_per_epoch, \
             total_progress=100. * niter / (iter_per_epoch*opt.n_epochs), \
-            Loss_ce=loss_ce.item(), Loss_adent=loss_adent.item(), \
+            Loss_ce=loss_ce.item(), Loss_adent=loss_adent, \
                 Accuracy=acc_src.item(), \
                 Best_Test=best_test)
     print(prompt, end='\r')
@@ -306,7 +313,7 @@ while True:
     f.write('\n')
     f.close()
     writer.add_scalar('CE_adEnt/loss_ce', loss_ce.item(), niter)
-    writer.add_scalar('CE_adEnt/loss_adent', loss_adent.item(), niter)
+    # writer.add_scalar('CE_adEnt/loss_adent', loss_adent.item(), niter)
     writer.add_scalar('CE_adEnt/src_accuracy', acc_src.item(), niter)
 
     if niter % iter_per_epoch == 0 and niter > 0:
@@ -320,7 +327,7 @@ while True:
             epoch = niter // iter_per_epoch
             
             # if epoch % opt.lr_decay == 0:
-            #     for param_group in optimizer.param_groups:
+            #     for param_group in optimizer_model.param_groups:
             #         param_group["lr"] = param_group["lr"] * 0.3
 
             n = 0
@@ -338,7 +345,14 @@ while True:
                 output = classifier1(feature)
                 test_loss += nn.CrossEntropyLoss()(output, Y_test).item()
                 pred = output.data.cpu().max(1, keepdim=True)[1]
-                correct += pred.eq(Y_test.data.cpu().view_as(pred)).sum().item()
+
+                correct += (Y.view_as(pred) == pred).sum()
+                # correct += pred.eq(Y_test.data.cpu().view_as(pred)).sum().item()
+                # pdb.set_trace()
+                # A = pred[0:10]
+                # B = Y[0:10]
+                # acc_tgt = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
+
                 
             test_loss /= len(test_loader.dataset)
             test_accuracy = 100. * correct / len(test_loader.dataset)
