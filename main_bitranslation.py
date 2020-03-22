@@ -87,7 +87,7 @@ iter_per_epoch = n_sample // opt.batch_size + 1
 src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
-if opt.prefix.split('_') is not None:
+if len(opt.prefix.split('_')) > 1:
     MODELTYPE = opt.prefix.split('_')
     MODELTYPE = MODELTYPE[1]
 else:

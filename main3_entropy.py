@@ -29,6 +29,7 @@ os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='0')
+parser.add_argument('--start_acc', type=int, default='0')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
@@ -51,8 +52,9 @@ opt = parser.parse_args()
 
 now = datetime.now()
 curtime = now.isoformat() 
-modelname = '{prefix}_{model}_{lr}_{lr2}_{weight_decay:0.3f}'.format(
-    prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, weight_decay=opt.weight_decay)
+modelname = '{prefix}_{model}_{lr}_{lr2}_{start_epoch}_{start_acc}_{weight_decay:0.4f}'.format(
+    prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, start_epoch=opt.
+    , start_acc=opt.start_acc, weight_decay=opt.weight_decay)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -88,11 +90,11 @@ iter_per_epoch = n_sample // opt.batch_size + 1
 src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
-# if opt.prefix.split('_') is not None:
-#     MODELTYPE = opt.prefix.split('_')
-#     MODELTYPE = MODELTYPE[1]
-# else:
-#     MODELTYPE = None
+if len(opt.prefix.split('_')) > 1:
+    MODELTYPE = opt.prefix.split('_')
+    MODELTYPE = MODELTYPE[1]
+else:
+    MODELTYPE = None
 
 modelsplit = opt.model.split('_')
 if (modelsplit[0] == 'mnist' or modelsplit[0] == 'usps') and modelsplit[1] != 'svhn':
@@ -188,14 +190,6 @@ else:
 
 from torchvision.utils import make_grid
 
-# ----------
-#  Training
-# ----------
-print('')
-niter = 0
-epoch = 0
-best_test = 0
-
 if opt.modelload is not None:
     if not opt.modelload.endswith(".pth"):
         file_list = os.listdir(opt.modelload)
@@ -223,8 +217,17 @@ if opt.modelload is not None:
     optimizer_model.load_state_dict(checkpoint['optimizer_model'])
     optimizer_classifier1.load_state_dict(checkpoint['optimizer_classifier1'])
 
+# ----------
+#  Training
+# ----------
+print('')
+niter = 0
+epoch = 0
+best_test = 0
+
 acc_src = 0
 tsne_model = TSNE(learning_rate=100)
+loss_adent = 0
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -244,9 +247,12 @@ while True:
 
     output_s = classifier1(f_s)
     softmax_output_s = nn.Softmax(dim=1)(output_s)
+    output_t = classifier1(f_t, reverse=True)
+    softmax_output_t = nn.Softmax(dim=1)(output_t)   
 
-    ###################
-    ##### CE Loss
+    # ----------
+    #  CE Loss
+    # ----------
     # A = model.conv_params[0].weight.data
     # pdb.set_trace()
     
@@ -266,37 +272,30 @@ while True:
     model.zero_grad()
     classifier1.zero_grad()
 
-    ###################
-    ###### adEnt Loss
-    # def Entropy(input_):
-    #     bs = input_.size(0)
-    #     epsilon = 1e-5
-    #     entropy = -input_ * torch.log(input_ + epsilon)
-    #     entropy = torch.sum(entropy, dim=1)
-    #     return entropy 
+    # ----------
+    #  adEnt Loss
+    # ----------
+ 
+    if acc_src > opt.start_acc:
+    # if epoch > opt.start_epoch:
+        if opt.prefix == 'adEntPlus':
+            loss_adent = torch.mean(Entropy(softmax_output_t))
+        elif opt.prefix == 'adEntMinus':
+            loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
+                (torch.log(softmax_output_t + 1e-5)), 1))
+        
+        loss_adent.backward()
+        optimizer_model.step()
+        optimizer_classifier1.step()
 
-    # loss_adent = 0
-    output_t = classifier1(f_t, reverse=True)
-    softmax_output_t = nn.Softmax(dim=1)(output_t)    
-    
-    if opt.prefix == 'adEntPlus':
-        loss_adent = torch.mean(Entropy(softmax_output_t))
-    elif opt.prefix == 'adEntMinus':
-        loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
-            (torch.log(softmax_output_t + 1e-5)), 1))
-    
-    loss_adent.backward()
-    optimizer_model.step()
-    optimizer_classifier1.step()
+        model.zero_grad()
+        classifier1.zero_grad()
+        optimizer_model.zero_grad()
+        optimizer_classifier1.zero_grad()
 
-    # print(loss_adent)
-    # pdb.set_trace()
-
-    model.zero_grad()
-    classifier1.zero_grad()
-    optimizer_model.zero_grad()
-    optimizer_classifier1.zero_grad()
-
+    # ----------
+    #  Save history
+    # ----------
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
     prompt = 'Train Epoch: {epoch} [{progress}/{iter_per_epoch}] {total_progress:.01f}% ' \
      'Loss_ce: {Loss_ce:.6f} Loss_adent: {Loss_adent:.6f} Src accuracy: {Accuracy:.2f}, ' \
@@ -313,9 +312,12 @@ while True:
     f.write('\n')
     f.close()
     writer.add_scalar('CE_adEnt/loss_ce', loss_ce.item(), niter)
-    # writer.add_scalar('CE_adEnt/loss_adent', loss_adent.item(), niter)
+    writer.add_scalar('CE_adEnt/loss_adent', loss_adent, niter)
     writer.add_scalar('CE_adEnt/src_accuracy', acc_src.item(), niter)
 
+    # ----------
+    #  Each epoch
+    # ----------
     if niter % iter_per_epoch == 0 and niter > 0:
         with torch.no_grad(): 
             # writer_tsne(writer, f_s, y_s, epoch, 'f_s_tsne')
@@ -347,20 +349,15 @@ while True:
                 pred = output.data.cpu().max(1, keepdim=True)[1]
 
                 correct += (Y.view_as(pred) == pred).sum()
-                # correct += pred.eq(Y_test.data.cpu().view_as(pred)).sum().item()
-                # pdb.set_trace()
-                # A = pred[0:10]
-                # B = Y[0:10]
-                # acc_tgt = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
 
-                
             test_loss /= len(test_loader.dataset)
             test_accuracy = 100. * correct / len(test_loader.dataset)
 
             if best_test < test_accuracy:
                 best_test = test_accuracy
 
-                modelsave = '{0}/{1}_{2}_{3:.1f}.pth'.format(run_dir, opt.prefix, epoch, best_test)
+                modelsave = '{run_dir}/{prefix}_{epoch}_{best_test:.1f}.pth'.format(
+                    run_dir=run_dir, prefix=opt.prefix, epoch=epoch, best_test=best_test)
 
                 if best_test > 50:
                     torch.save({
@@ -373,8 +370,8 @@ while True:
                         'optimizer_classifier1': optimizer_classifier1.state_dict(),
                         }, modelsave)
 
-            prompt = 'Test loss: {0:.6f}\t Test accuracy : {1:.1f} {2}'.format(
-                test_loss, test_accuracy, run_dir)
+            prompt = 'Test loss: {test_loss:.6f}\t Test accuracy : {test_accuracy:.1f} {run_dir}'.format(
+                test_loss=test_loss, test_accuracy=test_accuracy, run_dir=run_dir)
 
             print('')
             print(prompt)
@@ -387,14 +384,15 @@ while True:
             writer.add_scalar('CE_adEnt/test_loss', test_loss, epoch)
             writer.add_scalar('CE_adEnt/test_accuracy', test_accuracy, epoch)
             
-
-
-
+    # ----------
+    #  End of train
+    # ----------
     if epoch >= opt.n_epochs:
         print('')
         print('train complete')
         
-        modelsave = '{0}/{1}_{2}_{3:.1f}.pth'.format(run_dir, opt.prefix, epoch, best_test)
+        modelsave = '{run_dir}/{epoch}_{best_test:.1f}.pth'.format(
+            run_dir=run_dir, epoch=epoch, best_test=best_test)
 
         torch.save({
             'epoch': epoch,
@@ -406,7 +404,8 @@ while True:
             'optimizer_classifier1': optimizer_classifier1.state_dict(),
             }, modelsave)
 
-        run_dir_complete = '{0}_{1:0.2f}'.format(run_dir[:-8], best_test)
+        run_dir_complete = '{run_dir}_{best_test:0.2f}'.format(
+            run_dir=run_dir[:-8], best_test=best_test)
         os.rename(run_dir, run_dir_complete)
 
         break
