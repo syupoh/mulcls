@@ -53,8 +53,7 @@ opt = parser.parse_args()
 now = datetime.now()
 curtime = now.isoformat() 
 modelname = '{prefix}_{model}_{lr}_{lr2}_{start_epoch}_{start_acc}_{weight_decay:0.4f}'.format(
-    prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, start_epoch=opt.
-    , start_acc=opt.start_acc, weight_decay=opt.weight_decay)
+    prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, start_epoch=opt.start_epoch, start_acc=opt.start_acc, weight_decay=opt.weight_decay)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -275,7 +274,6 @@ while True:
     # ----------
     #  adEnt Loss
     # ----------
- 
     if acc_src > opt.start_acc:
     # if epoch > opt.start_epoch:
         if opt.prefix == 'adEntPlus':

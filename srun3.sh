@@ -7,16 +7,6 @@ if [ -z "$1" ]
     gpu="${1}"
 fi
 
-alphabet_set="A" 
-start_epoch_set="3 0 1 2"
-
-# 200320
-# lr_set="0.003 0.001 0.01 0.03 0.06 0.09 0.1 0.3 0.6"
-# for lr in ${lr_set}
-# do
-#   python main3_entropy.py --prefix adEntMinus --batch_size 3000 --gpu ${gpu} --lr ${lr}
-# done
-
 postfix="--n_epochs 200 --batch_size 3072"
 if [ ${gpu} -eq "0" ]
 then
@@ -42,8 +32,23 @@ elif [ ${gpu} -eq "3" ]
 then
   lr_set="0.01"
   lr2_set="0.01"
-  weight_decay_set="0.0005 0.0001 0.001 0.005 0.01 0.05 0.1 0.5"
-  start_epoch_set="0 1 2 3"
+  weight_decay_set="0.0005"
+  start_acc_set="60 70 80"
+  for lr in ${lr_set}
+  do
+    for lr2 in ${lr2_set}
+    do
+      for weight_decay in ${weight_decay_set}
+      do
+        for start_acc in ${start_acc_set}
+        do
+          python main3_entropy.py --prefix "adEntPlus" --gpu ${gpu} --start_acc ${start_acc} --weight_decay ${weight_decay} --lr ${lr} --lr2 ${lr2} ${postfix}
+        done
+      done
+    done
+  done
+  
+  weight_decay_set="0.0001 0.001 0.005 0.01 0.05 0.1 0.5"
   start_acc_set="50 60 70 80"
   for lr in ${lr_set}
   do
