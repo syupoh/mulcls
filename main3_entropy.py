@@ -25,27 +25,27 @@ from utils import ReplayBuffer
 import Networks2 as net
 
 
-os.makedirs("images", exist_ok=True)
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--start_epoch', type=int, default='0')
-parser.add_argument('--start_acc', type=int, default='0')
+parser.add_argument('--start_acc', type=int, default='50')
+parser.add_argument('--start_acc2', type=int, default='0')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
 parser.add_argument('--model', type=str, default='svhn_mnist')
-parser.add_argument('--prefix', type=str, default='CE_adEnt')
+parser.add_argument('--prefix', type=str, default='adEntPlus_A')
 parser.add_argument('--weight_decay', type=float, default=5e-4)
-parser.add_argument("--lr", type=float, default=2e-2, help="adam: learning rate")
-parser.add_argument("--lr2", type=float, default=2e-2, help="adam: learning rate")
+parser.add_argument("--lr", type=float, default=1e-2, help="adam: learning rate")
+parser.add_argument("--lr2", type=float, default=1e-2, help="adam: learning rate2")
+# parser.add_argument('--lr_decay', type=int, default='100')
 # parser.add_argument('--cla_plus_weight', type=float, default=3e-1)
 # parser.add_argument('--cyc_loss_weight',type=float,default=0.01)
 # parser.add_argument('--weight_in_loss_g',type=str,default='1,0.01,0.1,0.1')
-parser.add_argument('--lr_decay', type=int, default='100')
-parser.add_argument('--log_interval', type=int, default=50, help='how many batches to wait before logging training status')
+# parser.add_argument('--log_interval', type=int, default=50, help='how many batches to wait before logging training status')
 parser.add_argument('--random', type=bool, default=False, help='whether to use random')
+parser.add_argument("--seedfix", type=bool, default=False, help="seedfix")
 parser.add_argument('--norm', type=bool, default=True)
 parser.add_argument('--modelload', type=str, default=None)
 opt = parser.parse_args()
@@ -57,12 +57,23 @@ modelname = '{prefix}_{model}_{lr}_{lr2}_{start_epoch}_{start_acc}_{weight_decay
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
+seedCPU = torch.initial_seed()
+seedGPU = torch.cuda.initial_seed()
+
+if opt.seedfix:
+    seedCPU = 1341862488249197428
+    seedGPU = 1976746675577478
+
+    torch.manual_seed(seedCPU)
+    torch.cuda.manual_seed_all(seedGPU)
 
 prompt = ''
 prompt += ('====================================\n')
 prompt += run_dir + '\n'
 for arg in vars(opt):
     prompt = '{0}{1} : {2}\n'.format(prompt, arg, getattr(opt, arg))
+prompt += ("Current CPU seed : {0}\n".format(seedCPU))
+prompt += ("Current GPU seed : {0}\n".format(seedGPU))
 prompt += ('====================================\n')
 print(prompt, end='')
 
@@ -90,8 +101,9 @@ src_train_iter = iter(train_loader)
 tgt_train_iter = iter(train_loader2)
 
 if len(opt.prefix.split('_')) > 1:
-    MODELTYPE = opt.prefix.split('_')
-    MODELTYPE = MODELTYPE[1]
+    modelprefix = opt.prefix.split('_')
+    MODELTYPE = modelprefix[1]
+    MODELNAME = modelprefix[0]
 else:
     MODELTYPE = None
 
@@ -162,6 +174,7 @@ class_num = 10
 
 model = net.DTN().cuda()
 classifier1 = net.Classifier(input_size, class_num).cuda()
+classifier2 = net.Classifier(input_size, class_num).cuda()
 
 if opt.random:
     random_layer = net.RandomLayer([model.output_num(), class_num], 500)
@@ -175,6 +188,7 @@ else:
 ### Loss & Optimizers
 optimizer_model = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
 optimizer_classifier1 = torch.optim.Adam(classifier1.parameters(), lr=opt.lr2)
+optimizer_classifier2 = torch.optim.Adam(classifier2.parameters(), lr=opt.lr2)
 
 ### Initialize weights
 
@@ -213,8 +227,10 @@ if opt.modelload is not None:
     niter = checkpoint['niter']
     model.load_state_dict(checkpoint['model'])
     classifier1.load_state_dict(checkpoint['classifier1'])
+    classifier2.load_state_dict(checkpoint['classifier2'])
     optimizer_model.load_state_dict(checkpoint['optimizer_model'])
     optimizer_classifier1.load_state_dict(checkpoint['optimizer_classifier1'])
+    optimizer_classifier2.load_state_dict(checkpoint['optimizer_classifier2'])
 
 # ----------
 #  Training
@@ -225,8 +241,10 @@ epoch = 0
 best_test = 0
 
 acc_src = 0
+acc_src2 = 0
 tsne_model = TSNE(learning_rate=100)
 loss_adent = 0
+loss_cos = 0
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -237,17 +255,24 @@ while True:
 
     model.train()
     classifier1.train()
+    classifier2.train()
     optimizer_model.zero_grad()
     optimizer_classifier1.zero_grad()
+    optimizer_classifier2.zero_grad()
 
-    # Networks
+
+    # Networks Forward Propagation
     f_s, p_s = model(x_s)
     f_t, p_t = model(x_t)
 
     output_s = classifier1(f_s)
+    output_s2 = classifier2(f_s)
     softmax_output_s = nn.Softmax(dim=1)(output_s)
+    softmax_output_s2 = nn.Softmax(dim=1)(output_s2)
     output_t = classifier1(f_t, reverse=True)
+    output_t2 = classifier2(f_t, reverse=True)
     softmax_output_t = nn.Softmax(dim=1)(output_t)   
+    softmax_output_t2 = nn.Softmax(dim=1)(output_t2)   
 
     # ----------
     #  CE Loss
@@ -255,12 +280,17 @@ while True:
     # A = model.conv_params[0].weight.data
     # pdb.set_trace()
     
-    loss_ce = nn.CrossEntropyLoss()(output_s.narrow(0, 0, x_s.size(0)), y_s)    
+    loss_ce1 = nn.CrossEntropyLoss()(output_s.narrow(0, 0, x_s.size(0)), y_s)    
+    loss_ce2 = nn.CrossEntropyLoss()(output_s2.narrow(0, 0, x_s.size(0)), y_s)    
+    loss_ce = loss_ce1 + loss_ce2
+
     loss_ce.backward(retain_graph=True)
+
     optimizer_model.step()
     optimizer_classifier1.step()
-    # sum(sum(sum(sum(A - model.conv_params[0].weight.data))))
+    optimizer_classifier2.step()
 
+    # sum(sum(sum(sum(A - model.conv_params[0].weight.data))))
     # print(loss_ce)
     # pdb.set_trace()
     # print(model.conv_params[0].weight.data)
@@ -268,40 +298,78 @@ while True:
 
     optimizer_model.zero_grad()
     optimizer_classifier1.zero_grad()
+    optimizer_classifier2.zero_grad()
     model.zero_grad()
     classifier1.zero_grad()
+    classifier2.zero_grad()
+
+    # ----------
+    #  2cls Loss
+    # ----------
+    
+    if min(acc_src, acc_src2) > opt.start_acc2 and MODELTYPE == '2cls':
+        # pdb.set_trace()
+        # classifier1.fc[0].weight
+        # classifier1.fc[2].weight
+        # classifier1.fc[4].weight
+        # classifier1.fc1.weight
+
+        # classifier2.fc[0].weight
+        # classifier2.fc[2].weight
+        # classifier2.fc[4].weight
+        # classifier2.fc1.weight
+
+        loss_cos = -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight))
+        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight))
+        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight))
+        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight))
+        
+        optimizer_classifier1.step()
+        optimizer_classifier2.step()
+
+        optimizer_classifier1.zero_grad()
+        optimizer_classifier2.zero_grad()
+        
+        classifier1.zero_grad()
+        classifier2.zero_grad()
 
     # ----------
     #  adEnt Loss
     # ----------
-    if acc_src > opt.start_acc:
+    if min(acc_src, acc_src2) > opt.start_acc and  MODELNAME == 'adEntPlus' or  MODELNAME == 'adEntMinus':
     # if epoch > opt.start_epoch:
-        if opt.prefix == 'adEntPlus':
+        if MODELNAME == 'adEntPlus':
             loss_adent = torch.mean(Entropy(softmax_output_t))
-        elif opt.prefix == 'adEntMinus':
+        elif MODELNAME == 'adEntMinus':
             loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
                 (torch.log(softmax_output_t + 1e-5)), 1))
         
         loss_adent.backward()
         optimizer_model.step()
         optimizer_classifier1.step()
+        optimizer_classifier2.step()
 
         model.zero_grad()
         classifier1.zero_grad()
+        classifier2.zero_grad()
         optimizer_model.zero_grad()
         optimizer_classifier1.zero_grad()
+        optimizer_classifier2.zero_grad()
+
 
     # ----------
     #  Save history
     # ----------
     acc_src = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
+    acc_src2 = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s2.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
+    
     prompt = 'Train Epoch: {epoch} [{progress}/{iter_per_epoch}] {total_progress:.01f}% ' \
-     'Loss_ce: {Loss_ce:.6f} Loss_adent: {Loss_adent:.6f} Src accuracy: {Accuracy:.2f}, ' \
-     'Best_Test {Best_Test:.2f}'.format(
+     'Src_acc: {Accuracy:.2f}, Src_acc2: {Accuracy2:.2f}, Best_Test {Best_Test:.2f} ' \
+     'Loss_ce: {Loss_ce:.6f} Loss_adent: {Loss_adent:.6f} Loss_cos: {Loss_cos:.6f}'.format(
         epoch=epoch, progress=niter%iter_per_epoch, iter_per_epoch=iter_per_epoch, \
             total_progress=100. * niter / (iter_per_epoch*opt.n_epochs), \
-            Loss_ce=loss_ce.item(), Loss_adent=loss_adent, \
-                Accuracy=acc_src.item(), \
+            Loss_ce=loss_ce.item(), Loss_adent=loss_adent, Loss_cos=loss_cos, \
+                Accuracy=acc_src.item(), Accuracy2=acc_src2.item(),\
                 Best_Test=best_test)
     print(prompt, end='\r')
 
@@ -311,7 +379,9 @@ while True:
     f.close()
     writer.add_scalar('CE_adEnt/loss_ce', loss_ce.item(), niter)
     writer.add_scalar('CE_adEnt/loss_adent', loss_adent, niter)
+    writer.add_scalar('CE_adEnt/loss_cos', loss_cos, niter)
     writer.add_scalar('CE_adEnt/src_accuracy', acc_src.item(), niter)
+    writer.add_scalar('CE_adEnt/src_accuracy2', acc_src2.item(), niter)
 
     # ----------
     #  Each epoch
@@ -333,43 +403,36 @@ while True:
             n = 0
             nagree = 0
             correct = 0
+            correct2 = 0
             test_loss = 0 
+            test_loss2 = 0 
             for X, Y in test_loader: 
                 model.eval()
                 classifier1.eval()
+                classifier2.eval()
                 n += X.size()[0]
                 X_test = X.cuda() 
                 Y_test = Y.cuda() 
 
                 feature, _ = model(X_test) #
                 output = classifier1(feature)
+                output2 = classifier2(feature)
                 test_loss += nn.CrossEntropyLoss()(output, Y_test).item()
                 pred = output.data.cpu().max(1, keepdim=True)[1]
+                pred2 = output2.data.cpu().max(1, keepdim=True)[1]
 
                 correct += (Y.view_as(pred) == pred).sum()
+                correct2 += (Y.view_as(pred) == pred2).sum()
 
             test_loss /= len(test_loader.dataset)
             test_accuracy = 100. * correct / len(test_loader.dataset)
+            test_accuracy2 = 100. * correct2 / len(test_loader.dataset)
 
-            if best_test < test_accuracy:
-                best_test = test_accuracy
 
-                modelsave = '{run_dir}/{prefix}_{epoch}_{best_test:.1f}.pth'.format(
-                    run_dir=run_dir, prefix=opt.prefix, epoch=epoch, best_test=best_test)
-
-                if best_test > 50:
-                    torch.save({
-                        'epoch': epoch,
-                        'best_test': best_test,
-                        'niter': niter,
-                        'model': model.state_dict(),
-                        'classifier1': classifier1.state_dict(),
-                        'optimizer_model': optimizer_model.state_dict(),
-                        'optimizer_classifier1': optimizer_classifier1.state_dict(),
-                        }, modelsave)
-
-            prompt = 'Test loss: {test_loss:.6f}\t Test accuracy : {test_accuracy:.1f} {run_dir}'.format(
-                test_loss=test_loss, test_accuracy=test_accuracy, run_dir=run_dir)
+            prompt = ' Test_acc: {test_accuracy:.1f} Test_acc2: {test_accuracy2:.1f} ' \
+            'Test loss: {test_loss:.6f}\t{run_dir}'.format(
+                test_loss=test_loss, test_accuracy=test_accuracy, \
+                    test_accuracy2=test_accuracy2, run_dir=run_dir)
 
             print('')
             print(prompt)
@@ -381,6 +444,27 @@ while True:
 
             writer.add_scalar('CE_adEnt/test_loss', test_loss, epoch)
             writer.add_scalar('CE_adEnt/test_accuracy', test_accuracy, epoch)
+            
+            if best_test < max(test_accuracy, test_accuracy2):
+                best_test = max(test_accuracy, test_accuracy2)
+
+                modelsave = '{run_dir}/{prefix}_{epoch}_{best_test:.1f}_.pth'.format(
+                    run_dir=run_dir, prefix=opt.prefix, epoch=epoch, \
+                        best_test=best_test)
+
+                if best_test > 50:
+                    torch.save({
+                        'epoch': epoch,
+                        'best_test': best_test,
+                        'niter': niter,
+                        'model': model.state_dict(),
+                        'classifier1': classifier1.state_dict(),
+                        'classifier2': classifier2.state_dict(),
+                        'optimizer_model': optimizer_model.state_dict(),
+                        'optimizer_classifier1': optimizer_classifier1.state_dict(),
+                        'optimizer_classifier2': optimizer_classifier2.state_dict(),
+                        }, modelsave)
+
             
     # ----------
     #  End of train
@@ -398,8 +482,10 @@ while True:
             'niter': niter,
             'model': model.state_dict(),
             'classifier1': classifier1.state_dict(),
+            'classifier2': classifier2.state_dict(),
             'optimizer_model': optimizer_model.state_dict(),
             'optimizer_classifier1': optimizer_classifier1.state_dict(),
+            'optimizer_classifier2': optimizer_classifier2.state_dict(),
             }, modelsave)
 
         run_dir_complete = '{run_dir}_{best_test:0.2f}'.format(
