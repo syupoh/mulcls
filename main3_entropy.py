@@ -310,17 +310,7 @@ while True:
     # ----------
     
     if min(acc_src, acc_src2) > opt.start_acc2 and MODELTYPE == '2cls':
-        # pdb.set_trace()
-        # classifier1.fc[0].weight
-        # classifier1.fc[2].weight
-        # classifier1.fc[4].weight
-        # classifier1.fc1.weight
 
-        # classifier2.fc[0].weight
-        # classifier2.fc[2].weight
-        # classifier2.fc[4].weight
-        # classifier2.fc1.weight
-4
         loss_cos = -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight))
         loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight))
         loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight))
@@ -366,8 +356,8 @@ while True:
     acc_src2 = 100*(np.mean(np.argmax((nn.Softmax(dim=1)(output_s2.detach())).data.cpu().numpy(), axis=1) == y_s.data.cpu().numpy()))        
     
     prompt = 'Train Epoch: {epoch} [{progress}/{iter_per_epoch}] {total_progress:.01f}% ' \
-     'Loss_ce: {Loss_ce:.6f} Loss_adent: {Loss_adent:.6f} Loss_cos: {Loss_cos:.6f} ' \
-     'Src_acc: {Accuracy:.2f}, Src_acc2: {Accuracy2:.2f}, Best_Test {Best_Test:.2f}'.format(
+     'Src_acc: {Accuracy:.2f}, Src_acc2: {Accuracy2:.2f}, Best_Test {Best_Test:.2f} ' \
+     'Loss_ce: {Loss_ce:.6f} Loss_adent: {Loss_adent:.6f} Loss_cos: {Loss_cos:.6f}'.format(
         epoch=epoch, progress=niter%iter_per_epoch, iter_per_epoch=iter_per_epoch, \
             total_progress=100. * niter / (iter_per_epoch*opt.n_epochs), \
             Loss_ce=loss_ce.item(), Loss_adent=loss_adent, Loss_cos=loss_cos, \
@@ -431,8 +421,8 @@ while True:
             test_accuracy2 = 100. * correct2 / len(test_loader.dataset)
 
 
-            prompt = 'Test loss: {test_loss:.6f} Test_acc: {test_accuracy:.1f} ' \
-            'Test_acc2: {test_accuracy2:.1f} {run_dir}'.format(
+            prompt = ' Test_acc: {test_accuracy:.1f} Test_acc2: {test_accuracy2:.1f} ' \
+            'Test loss: {test_loss:.6f}\t{run_dir}'.format(
                 test_loss=test_loss, test_accuracy=test_accuracy, \
                     test_accuracy2=test_accuracy2, run_dir=run_dir)
 
