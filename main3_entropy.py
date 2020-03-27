@@ -31,7 +31,7 @@ parser.add_argument('--start_acc', type=int, default='50')
 parser.add_argument('--start_acc2', type=int, default='0')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=2048, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=3686, help="size of the batches")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
 parser.add_argument('--model', type=str, default='svhn_mnist')
@@ -54,8 +54,7 @@ now = datetime.now()
 curtime = now.isoformat() 
 modelname = '{prefix}_{model}_{lr}_{lr2}_{start_acc}_{start_acc2}_{weight_decay:0.4f}'.format(
     prefix=opt.prefix, model=opt.model, lr=opt.lr, lr2=opt.lr2, \
-        start_acc=opt.start_acc, start_acc2=opt.start_acc2, \
-            weight_decay=opt.weight_decay)
+        start_acc=opt.start_acc, start_acc2=opt.start_acc2, weight_decay=opt.weight_decay)
 run_dir = "runs/{0}_{1}_ongoing".format(curtime[0:16], modelname)
 writer = SummaryWriter(run_dir)
 
@@ -309,13 +308,22 @@ while True:
     #  2cls Loss
     # ----------
     
-    if min(acc_src, acc_src2) > opt.start_acc2 and MODELTYPE == '2cls':
+    if min(acc_src, acc_src2) > opt.start_acc2 and (MODELTYPE == '2cls' or \
+        MODELTYPE == '2clsA' or MODELTYPE == '2clsB' or MODELTYPE == '2clsC' or MODELTYPE == '2clsD'):
+        if MODELTYPE == '2clsA':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)))
+        elif MODELTYPE == '2clsB':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)))
+        elif MODELTYPE == '2clsC':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)))
+        elif MODELTYPE == '2clsD':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))
+        elif MODELTYPE == '2cls':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
+                torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
+                        torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))/4
 
-        loss_cos = -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight))
-        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight))
-        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight))
-        loss_cos += -1 * torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight))
-        
         optimizer_classifier1.step()
         optimizer_classifier2.step()
 
@@ -414,7 +422,7 @@ while True:
                 pred2 = output2.data.cpu().max(1, keepdim=True)[1]
 
                 correct += (Y.view_as(pred) == pred).sum()
-                correct2 += (Y.view_as(pred) == pred2).sum()
+                correct2 += (Y.view_as(pred2) == pred2).sum()
 
             test_loss /= len(test_loader.dataset)
             test_accuracy = 100. * correct / len(test_loader.dataset)
