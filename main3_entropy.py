@@ -190,6 +190,7 @@ else:
 optimizer_model = torch.optim.SGD(model.parameters(), lr=opt.lr, weight_decay=opt.weight_decay, momentum=0.9)
 optimizer_classifier1 = torch.optim.Adam(classifier1.parameters(), lr=opt.lr2)
 optimizer_classifier2 = torch.optim.Adam(classifier2.parameters(), lr=opt.lr2)
+criterion_GAN = torch.nn.MSELoss()
 
 ### Initialize weights
 
@@ -308,8 +309,7 @@ while True:
     #  2cls Loss
     # ----------
     
-    if min(acc_src, acc_src2) > opt.start_acc2 and (MODELTYPE == '2cls' or \
-        MODELTYPE == '2clsA' or MODELTYPE == '2clsB' or MODELTYPE == '2clsC' or MODELTYPE == '2clsD'):
+    if min(acc_src, acc_src2) > opt.start_acc2 and (MODELTYPE.find('2cls') > -1):
         if MODELTYPE == '2clsA':
             loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)))
         elif MODELTYPE == '2clsB':
@@ -318,6 +318,40 @@ while True:
             loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)))
         elif MODELTYPE == '2clsD':
             loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))
+        elif MODELTYPE == '2clsE':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)))/2
+        elif MODELTYPE == '2clsF':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)))/2
+        elif MODELTYPE == '2clsG':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)))/2
+        elif MODELTYPE == '2clsH':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)))/2
+        elif MODELTYPE == '2clsI':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)))/2
+        elif MODELTYPE == '2clsJ':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)))/2
+        elif MODELTYPE == '2clsK':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
+                        torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)))/3
+        elif MODELTYPE == '2clsL':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
+                        torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)))/3
+        elif MODELTYPE == '2clsM':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
+                        torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)))/3
+        elif MODELTYPE == '2clsN':
+            loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
+                    torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
+                        torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)))/3
         elif MODELTYPE == '2cls':
             loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
                 torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
@@ -334,15 +368,41 @@ while True:
         classifier2.zero_grad()
 
     # ----------
+    #  adcls Loss
+    # ----------
+    if min(acc_src, acc_src2) > opt.start_acc and (MODELTYPE.find('adcls') > -1):
+        # loss_adcos 
+        # loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
+        #     torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
+        #         torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
+        #             torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))/4
+        # loss_adcls_D = criterion_GAN(pred_f_st, D)
+
+        optimizer_classifier1.step()
+        optimizer_classifier2.step()
+
+        optimizer_classifier1.zero_grad()
+        optimizer_classifier2.zero_grad()
+        
+        classifier1.zero_grad()
+        classifier2.zero_grad()
+
+
+    # ----------
     #  adEnt Loss
     # ----------
     if min(acc_src, acc_src2) > opt.start_acc and  MODELNAME == 'adEntPlus' or  MODELNAME == 'adEntMinus':
     # if epoch > opt.start_epoch:
         if MODELNAME == 'adEntPlus':
-            loss_adent = torch.mean(Entropy(softmax_output_t))
+            loss_adent = torch.mean(Entropy(softmax_output_t)) 
+            if (MODELTYPE.find('2cls')) > -1:
+                loss_adent = (loss_adent / 2) + torch.mean(Entropy(softmax_output_t2)) /2
         elif MODELNAME == 'adEntMinus':
             loss_adent = 0.1 * torch.mean(torch.sum(softmax_output_t * \
                 (torch.log(softmax_output_t + 1e-5)), 1))
+            if (MODELTYPE.find('2cls')) > -1:
+                loss_adent = (loss_adent / 2) + torch.mean(torch.sum(softmax_output_t * \
+                    (torch.log(softmax_output_t + 1e-5)), 1)) / 2
         
         loss_adent.backward()
         optimizer_model.step()
