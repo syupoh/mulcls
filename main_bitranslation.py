@@ -105,6 +105,9 @@ else:
     n_c_out = 3 # number of color channels
     opt.channels = 3
 
+def calc_coeff(iter_num, high=1.0, low=0.0, alpha=10.0, max_iter=10000.0):
+    return np.float(2.0 * (high - low) / (1.0 + np.exp(-alpha*iter_num / max_iter)) - (high - low) + low)
+
 def Entropy(input_):
     bs = input_.size(0)
     epsilon = 1e-5
@@ -294,13 +297,18 @@ while True:
     # if epoch > start_epoch:
     #     if method == 'CDAN-E':
     #         entropy = loss_func.Entropy(softmax_output)
-    #         loss += loss_func.CDAN([features, softmax_output], ad_net, entropy, network.calc_coeff(num_iter*(epoch-start_epoch)+batch_idx), random_layer)
+    #         loss += loss_func.CDAN([features, softmax_output], ad_net, entropy, calc_coeff(num_iter*(epoch-opt.start_epoch)+batch_idx), random_layer)
     #     elif method == 'CDAN':
     #         loss += loss_func.CDAN([features, softmax_output], ad_net, None, None, random_layer)
     #     elif method == 'DANN':
     #         loss += loss_func.DANN(features, ad_net)
     #     else:
     #         raise ValueError('Method cannot be recognized.')
+
+    # print('Train Epoch: {epoch} [{progress}/{iter_per_epoch}] {total_progress:.01f}%'
+    #  'Loss: {Loss:.6f} Loss+G: {Loss_G:.6f} Accuracy: {Accuracy:.2f}, Best_Test {Best_Test:.2f}'.format(
+    #     epoch=epoch, progress=niter%iter_per_epoch, iter_per_epoch=iter_per_epoch, \
+    #         total_progress=100. * niter / (iter_per_epoch*opt.n_epochs), \
 
     ### error must be occured
     num_feature = features.size(0)

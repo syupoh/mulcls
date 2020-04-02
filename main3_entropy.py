@@ -31,11 +31,11 @@ parser.add_argument('--start_acc', type=int, default='50')
 parser.add_argument('--start_acc2', type=int, default='0')
 parser.add_argument('--digitroot', type=str, default='~/dataset/digits/')
 parser.add_argument("--n_epochs", type=int, default=50, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=3686, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=4096, help="size of the batches")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
 parser.add_argument("--gpu", type=int, default=3)
 parser.add_argument('--model', type=str, default='svhn_mnist')
-parser.add_argument('--prefix', type=str, default='adEntPlus_A')
+parser.add_argument('--prefix', type=str, default='adEntPlus_2cls')
 parser.add_argument('--weight_decay', type=float, default=5e-4)
 parser.add_argument("--lr", type=float, default=1e-2, help="adam: learning rate")
 parser.add_argument("--lr2", type=float, default=1e-2, help="adam: learning rate2")
@@ -120,6 +120,9 @@ else:
     n_c_out = 3 # number of color channels
     opt.channels = 3
 
+def calc_coeff(iter_num, high=1.0, low=0.0, alpha=10.0, max_iter=10000.0):
+    return np.float(2.0 * (high - low) / (1.0 + np.exp(-alpha*iter_num / max_iter)) - (high - low) + low)
+
 def Entropy(input_):
     bs = input_.size(0)
     epsilon = 1e-5
@@ -132,6 +135,7 @@ def grl_hook(coeff):
         return -coeff*grad.clone()
     return fun1
 
+# coeff = calc_coeff(num_iter*(epoch-start_epoch)+batch_idx)
 def CDAN(input_list, ad_net, entropy=None, coeff=None, random_layer=None):
     softmax_output = input_list[1].detach()
     feature = input_list[0]
@@ -247,6 +251,7 @@ acc_src2 = 0
 tsne_model = TSNE(learning_rate=100)
 loss_adent = 0
 loss_cos = 0
+
 while True:
     niter += 1
     x_s, y_s = next(src_train_iter)
@@ -278,10 +283,7 @@ while True:
 
     # ----------
     #  CE Loss
-    # ----------
-    # A = model.conv_params[0].weight.data
-    # pdb.set_trace()
-    
+    # ----------    
     loss_ce1 = nn.CrossEntropyLoss()(output_s.narrow(0, 0, x_s.size(0)), y_s)    
     loss_ce2 = nn.CrossEntropyLoss()(output_s2.narrow(0, 0, x_s.size(0)), y_s)    
     loss_ce = loss_ce1 + loss_ce2
@@ -291,12 +293,6 @@ while True:
     optimizer_model.step()
     optimizer_classifier1.step()
     optimizer_classifier2.step()
-
-    # sum(sum(sum(sum(A - model.conv_params[0].weight.data))))
-    # print(loss_ce)
-    # pdb.set_trace()
-    # print(model.conv_params[0].weight.data)
-    # print(classifier1.conv_params[0].weight.data)
 
     optimizer_model.zero_grad()
     optimizer_classifier1.zero_grad()
@@ -358,12 +354,21 @@ while True:
                     torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
                         torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))/4
 
+        # A = classifier1.fc1.weight.data.clone()
+        # AA = classifier1.fc1.weight.grad.data.clone()
+        if (opt.gpu == 0 or opt.gpu == "0") and loss_cos < 0:
+            loss_cos = -1 * loss_cos
+        loss_cos.backward()
+        
         optimizer_classifier1.step()
         optimizer_classifier2.step()
 
+        # sum(sum(classifier1.fc1.weight.data-A))
+        # sum(sum(classifier1.fc1.weight.grad.data-AA))
+
         optimizer_classifier1.zero_grad()
         optimizer_classifier2.zero_grad()
-        
+
         classifier1.zero_grad()
         classifier2.zero_grad()
 
@@ -387,11 +392,10 @@ while True:
         classifier1.zero_grad()
         classifier2.zero_grad()
 
-
     # ----------
     #  adEnt Loss
     # ----------
-    if min(acc_src, acc_src2) > opt.start_acc and  MODELNAME == 'adEntPlus' or  MODELNAME == 'adEntMinus':
+    if min(acc_src, acc_src2) > opt.start_acc and (MODELNAME.find('adEnt')) > -1:
     # if epoch > opt.start_epoch:
         if MODELNAME == 'adEntPlus':
             loss_adent = torch.mean(Entropy(softmax_output_t)) 
@@ -415,7 +419,6 @@ while True:
         optimizer_model.zero_grad()
         optimizer_classifier1.zero_grad()
         optimizer_classifier2.zero_grad()
-
 
     # ----------
     #  Save history
