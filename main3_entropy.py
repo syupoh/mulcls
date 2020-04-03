@@ -381,8 +381,8 @@ while True:
             #             torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))/4
 
 
-        A = classifier1.fc1.weight.data.clone()
-        AA = classifier1.fc1.weight.grad.data.clone()
+        # A = classifier1.fc1.weight.data.clone()
+        # AA = classifier1.fc1.weight.grad.data.clone()
         
         # for child in classifier_j.children():
         #     for param in child.parameters():
