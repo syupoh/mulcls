@@ -317,95 +317,96 @@ while True:
     # ----------
     
     if min(acc_src, acc_src2) > opt.start_acc2 and (opt.prefix.find('2cls') > -1):
-        if MODELTYPE == 'A':
-            loss_cos = cal_cossim(classifier1.fc[0], classifier2.fc[0])
-        elif MODELTYPE == 'B':
-            loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[4])
-        elif MODELTYPE == 'C':
-            loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4])
-        elif MODELTYPE == 'D':
-            loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1)
-        elif MODELTYPE == 'E':
-            loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                cal_cossim(classifier1.fc1, classifier2.fc1)
-            loss_cos /= 2
-        elif MODELTYPE == 'F':
-            loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
-                cal_cossim(classifier1.fc1, classifier2.fc1)
-            loss_cos /= 2
-        elif MODELTYPE == 'G':
-            loss_cos = cal_cossim(classifier1.fc[0], classifier2.fc[0]) + \
-                cal_cossim(classifier1.fc1, classifier2.fc1)
-            loss_cos /= 2
-        elif MODELTYPE == 'H':
-            loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                cal_cossim(classifier1.fc[2], classifier2.fc[2])
-            loss_cos /= 2
-        elif MODELTYPE == 'I':
-            loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 2
-        elif MODELTYPE == 'J':
-            loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
-                cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 2
-        elif MODELTYPE == 'K':
-            loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
-                cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                    cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 3
-        elif MODELTYPE == 'L':
-            loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
-                cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                    cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 3
-        elif MODELTYPE == 'M':
-            loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
-                cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
-                    cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 3
-        elif MODELTYPE == 'N':
-            loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
-                cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                    cal_cossim(classifier1.fc[2], classifier2.fc[2])
-            loss_cos /= 3
-        else:
-            loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
-                cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
-                    cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
-                        cal_cossim(classifier1.fc[0], classifier2.fc[0])
-            loss_cos /= 4
-            # loss_cos = -1 * (torch.mean(nn.CosineSimilarity()(classifier1.fc[0].weight, classifier2.fc[0].weight)) + \
-            #     torch.mean(nn.CosineSimilarity()(classifier1.fc[2].weight, classifier2.fc[2].weight)) + \
-            #         torch.mean(nn.CosineSimilarity()(classifier1.fc[4].weight, classifier2.fc[4].weight)) + \
-            #             torch.mean(nn.CosineSimilarity()(classifier1.fc1.weight, classifier2.fc1.weight)))/4
-
+        # if MODELTYPE == 'A':
+        #     loss_cos = cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        # elif MODELTYPE == 'B':
+        #     loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[4])
+        # elif MODELTYPE == 'C':
+        #     loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4])
+        # elif MODELTYPE == 'D':
+        #     loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1)
+        # elif MODELTYPE == 'E':
+        #     loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #         cal_cossim(classifier1.fc1, classifier2.fc1)
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'F':
+        #     loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
+        #         cal_cossim(classifier1.fc1, classifier2.fc1)
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'G':
+        #     loss_cos = cal_cossim(classifier1.fc[0], classifier2.fc[0]) + \
+        #         cal_cossim(classifier1.fc1, classifier2.fc1)
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'H':
+        #     loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #         cal_cossim(classifier1.fc[2], classifier2.fc[2])
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'I':
+        #     loss_cos = cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #         cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'J':
+        #     loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
+        #         cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 2
+        # elif MODELTYPE == 'K':
+        #     loss_cos = cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
+        #         cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #             cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 3
+        # elif MODELTYPE == 'L':
+        #     loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
+        #         cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #             cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 3
+        # elif MODELTYPE == 'M':
+        #     loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
+        #         cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
+        #             cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 3
+        # elif MODELTYPE == 'N':
+        #     loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
+        #         cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #             cal_cossim(classifier1.fc[2], classifier2.fc[2])
+        #     loss_cos /= 3
+        # else:
+        #     loss_cos = cal_cossim(classifier1.fc1, classifier2.fc1) + \
+        #         cal_cossim(classifier1.fc[4], classifier2.fc[4]) + \
+        #             cal_cossim(classifier1.fc[2], classifier2.fc[2]) + \
+        #                 cal_cossim(classifier1.fc[0], classifier2.fc[0])
+        #     loss_cos /= 4
+            
 
         # A = classifier1.fc1.weight.data.clone()
         # AA = classifier1.fc1.weight.grad.data.clone()
+
+        # # classifier1.fc[2].weight.requires_grad = False
+        # # classifier1.fc1.weight.requires_grad = False
+
+        # B1 = classifier1.fc[2].weight.data.clone()
+        # B2 = classifier1.fc[0].weight.data.clone()
+        # B3 = classifier1.fc[4].weight.data.clone()
         
-        # for child in classifier_j.children():
-        #     for param in child.parameters():
-        #         param.requires_grad = True
-        # for child in generator_g.children():
-        #     for param in child.parameters():
-        #         param.requires_grad = True
-        # for child in classifier_c.children():
-        #     for param in child.parameters():
-        #         param.requires_grad = True
-
-        # classifier1.fc[2].weight.requires_grad = False
-
-        # B = classifier1.fc[2].weight.data.clone()
-        # classifier2.fc1.weight.grad.data
         # BB1 = classifier1.fc[2].weight.grad.data.clone()
         # BB2 = classifier1.fc[0].weight.grad.data.clone()
         # BB3 = classifier1.fc[4].weight.grad.data.clone()
 
 
+        W1 = None
+        W2 = None
+        for layer1, layer2 in zip(classifier1.children(), classifier2.children()):
+            for (w1, w2) in zip(layer1.parameters(), layer2.parameters()):
+                if W1 is None and W2 is None:
+                    W1 = w1.view(-1)
+                    W2 = w2.view(-1)
+                else:
+                    W1 = torch.cat((W1, w1.view(-1)), 0)
+                    W2 = torch.cat((W2, w2.view(-1)), 0)
+
+            loss_cos = (torch.matmul(W1, W2) / (torch.norm(W1) * torch.norm(W2)) + 1)
+            
+
         loss_cos.backward()
-        # pdb.set_trace()
-        
         optimizer_classifier1.step()
         optimizer_classifier2.step()
 
